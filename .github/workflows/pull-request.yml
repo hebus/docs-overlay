@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+  # So the whole chain can be exercised against `main` without opening a pull request.
+  workflow_dispatch:
 
 jobs:
   verify:
@@ -26,3 +28,18 @@ jobs:
       # Packs the core and runs it in a directory with no node_modules at all, so the
       # framework-independence rule is proven on the artefact and not only on the sources.
       - run: npm run verify:independence
+
+  example:
+    # Separate job so a Next or MDX failure reads as such, instead of looking like a library failure.
+    # `postbuild` asserts the exported HTML, which is the end-to-end test of the whole product.
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run build:example
