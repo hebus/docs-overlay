@@ -39,9 +39,27 @@ npm run build:docs             # the documentation site
 ## Releasing
 
 CI never publishes. It only keeps the "chore: version packages" pull request up to date; merging
-that bumps the versions and writes the changelogs. Publishing is `npm run release`, run locally,
-which builds, re-checks the packaged types and the core's independence, publishes to npmjs and
-pushes one tag per package. It is idempotent, so an interrupted release can just be run again.
+that bumps the versions and writes the changelogs. Publishing is local:
+
+```bash
+npm run release:dry    # every check, nothing published
+npm run release
+```
+
+It builds, re-checks the packaged types and the core's independence, publishes each pending package
+to npmjs and pushes one tag per package — `@docs-overlay/core@0.1.0`, since Changesets bumps the two
+packages independently and they will drift apart.
+
+Two refusals worth knowing about, because both protect the same thing — that npm, the changelog and
+git describe the same tree:
+
+- **a dirty working tree**, since the tag it pushes points at `HEAD`;
+- **a `HEAD` that did not introduce the version**. Merge the version pull request and release from
+  that commit. If features have landed since, cut a new version rather than shipping a tree that is
+  ahead of its own changelog. There is deliberately no escape hatch.
+
+Everything else is idempotent: a version already on npmjs is skipped and an existing tag is left
+alone, so an interrupted release can simply be run again.
 
 ## Changesets
 

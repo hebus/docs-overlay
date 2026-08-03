@@ -154,8 +154,10 @@ machine and no long-lived npm token has to live in CI:
 npm run release
 ```
 
-It refuses a dirty tree, skips any version already on npmjs, re-runs the packaging and independence
-checks before publishing, and pushes one git tag per package. Running it twice is harmless.
+It refuses a dirty tree **and** a `HEAD` that did not introduce the version — so what reaches npm is
+always the tree the changelog describes. Beyond that it skips any version already on npmjs, re-runs the
+packaging and independence checks before publishing, and pushes one git tag per package. Running it
+twice is harmless; `npm run release:dry` runs every check and publishes nothing.
 
 Every change to a published package needs a changeset (`npx changeset`, or write
 `.changeset/<name>.md` by hand); the `changeset-check` workflow blocks the PR otherwise. Put
