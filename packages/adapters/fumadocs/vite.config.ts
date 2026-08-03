@@ -19,7 +19,7 @@ export default defineConfig({
       fileName: (_format, name) => `${name}.js`
     },
     rolldownOptions: {
-      external: ["@docs-overlay/core", "zod", /^fumadocs-core($|\/)/]
+      external: ["docs-overlay", "zod", /^fumadocs-core($|\/)/]
     }
   }
 });

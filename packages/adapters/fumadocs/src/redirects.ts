@@ -1,4 +1,4 @@
-import type { RedirectRule } from "@docs-overlay/core";
+import type { RedirectRule } from "docs-overlay";
 
 import type { OverlaySource } from "./overlay-source.js";
 

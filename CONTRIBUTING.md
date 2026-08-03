@@ -7,7 +7,7 @@ npm test
 
 ## The one rule
 
-`@docs-overlay/core` must never import a framework or a Node built-in. Adapters depend on the core;
+`docs-overlay` must never import a framework or a Node built-in. Adapters depend on the core;
 the core depends on nothing. Before adding a feature, ask whether it belongs to versioned documentation
 itself or to a documentation framework — if the latter, it goes in an adapter.
 
@@ -47,7 +47,7 @@ npm run release
 ```
 
 It builds, re-checks the packaged types and the core's independence, publishes each pending package
-to npmjs and pushes one tag per package — `@docs-overlay/core@0.1.0`, since Changesets bumps the two
+to npmjs and pushes one tag per package — `docs-overlay@0.1.0`, since Changesets bumps the two
 packages independently and they will drift apart.
 
 Two refusals worth knowing about, because both protect the same thing — that npm, the changelog and
@@ -68,7 +68,7 @@ the pull request. `npx changeset` is interactive; writing the file by hand is fi
 
 ```md
 ---
-"@docs-overlay/core": minor
+"docs-overlay": minor
 ---
 
 Add `getEntries()` so adapters can enumerate every slug a version answers for.

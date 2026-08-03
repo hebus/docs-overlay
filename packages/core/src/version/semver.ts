@@ -1,6 +1,6 @@
 /**
  * Just enough semver to order version folders, written by hand so that
- * `@docs-overlay/core` keeps zero runtime dependencies.
+ * `docs-overlay` keeps zero runtime dependencies.
  */
 
 /** `[major, minor, patch, prerelease?]`. Build metadata is parsed and discarded, per the spec. */

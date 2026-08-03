@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 
-import type { VersionTab } from "@docs-overlay/fumadocs";
+import type { VersionTab } from "docs-overlay-fumadocs";
 
 /**
- * The version switcher lives in the app, not in `@docs-overlay/fumadocs` — that package stays free of
+ * The version switcher lives in the app, not in `docs-overlay-fumadocs` — that package stays free of
  * React at runtime.
  *
  * It is handed an explicit list rather than relying on Fumadocs' automatic sidebar-tab detection,

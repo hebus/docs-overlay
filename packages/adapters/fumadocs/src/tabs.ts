@@ -1,4 +1,4 @@
-import type { VersionId } from "@docs-overlay/core";
+import type { VersionId } from "docs-overlay";
 import type { Folder, Node, Root } from "fumadocs-core/page-tree";
 
 import type { PageTreeReader } from "./diagnostics.js";

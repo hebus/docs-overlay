@@ -1,5 +1,5 @@
 /**
- * Public surface of `@docs-overlay/core`.
+ * Public surface of `docs-overlay`.
  *
  * Everything a consumer may rely on is re-exported from this file; nothing else in
  * `src/` is part of the contract. The package is deliberately dependency-free and

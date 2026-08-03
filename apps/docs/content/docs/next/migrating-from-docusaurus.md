@@ -31,7 +31,7 @@ current one, `/11.13.0/...` for an older one. Nothing that was linked externally
 
    ```ts
    // source.config.ts
-   import { withOverlay } from "@docs-overlay/fumadocs/schema";
+   import { withOverlay } from "docs-overlay-fumadocs/schema";
    export const docs = defineDocs({ dir: "content/docs", docs: { schema: withOverlay(pageSchema) } });
    ```
 

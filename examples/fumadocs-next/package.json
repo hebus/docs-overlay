@@ -1,5 +1,5 @@
 {
-  "name": "@docs-overlay/example-fumadocs-next",
+  "name": "docs-overlay-example",
   "version": "0.0.0",
   "private": true,
   "description": "Executable documentation for docs-overlay: five versions exercising override, rename, tombstone, re-add and navigation inheritance.",
@@ -13,8 +13,8 @@
     "start": "npx serve out"
   },
   "dependencies": {
-    "@docs-overlay/core": "*",
-    "@docs-overlay/fumadocs": "*",
+    "docs-overlay": "*",
+    "docs-overlay-fumadocs": "*",
     "fumadocs-core": "^16.14.0",
     "fumadocs-mdx": "^15.2.2",
     "fumadocs-ui": "^16.14.0",

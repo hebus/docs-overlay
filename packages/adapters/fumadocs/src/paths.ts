@@ -1,4 +1,4 @@
-import type { Slug, SourcePath, Version, VersionId } from "@docs-overlay/core";
+import type { Slug, SourcePath, Version, VersionId } from "docs-overlay";
 
 /** Maps a version onto the URL segment that identifies it. Defaults to the folder name. */
 export type VersionSegmentFn = (version: Version) => string;

@@ -1,4 +1,4 @@
-import type { Diagnostic } from "@docs-overlay/core";
+import type { Diagnostic } from "docs-overlay";
 import type { Node, Root } from "fumadocs-core/page-tree";
 
 import { versionOfSlugs } from "./paths.js";

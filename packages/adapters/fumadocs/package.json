@@ -1,5 +1,5 @@
 {
-  "name": "@docs-overlay/fumadocs",
+  "name": "docs-overlay-fumadocs",
   "version": "0.0.0",
   "description": "Fumadocs adapter for docs-overlay: versioned documentation with overlay inheritance.",
   "license": "MIT",
@@ -27,7 +27,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "@docs-overlay/core": "^0.0.0"
+    "docs-overlay": "^0.0.0"
   },
   "peerDependencies": {
     "fumadocs-core": ">=16 <17",
@@ -56,8 +56,5 @@
     "directory": "packages/adapters/fumadocs"
   },
   "homepage": "https://github.com/hebus/docs-overlay/tree/main/packages/adapters/fumadocs#readme",
-  "bugs": "https://github.com/hebus/docs-overlay/issues",
-  "publishConfig": {
-    "access": "public"
-  }
+  "bugs": "https://github.com/hebus/docs-overlay/issues"
 }

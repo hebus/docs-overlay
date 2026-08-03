@@ -26,17 +26,17 @@ page nobody touches afterwards will keep being served from the very file you are
 
 ## Packages
 
-| Package                  | Role                                                                                                                       |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `@docs-overlay/core`     | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
-| `@docs-overlay/fumadocs` | Fumadocs / Next.js adapter.                                                                                                |
+| Package                 | Role                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `docs-overlay`          | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
+| `docs-overlay-fumadocs` | Fumadocs / Next.js adapter.                                                                                                |
 
 Adapters depend on the core, never the reverse.
 
 ## Install
 
 ```bash
-npm install @docs-overlay/core @docs-overlay/fumadocs
+npm install docs-overlay docs-overlay-fumadocs
 ```
 
 Then widen your frontmatter schema — this step is not optional, and skipping it fails silently:
@@ -45,7 +45,7 @@ Then widen your frontmatter schema — this step is not optional, and skipping i
 // source.config.ts
 import { pageSchema } from "fumadocs-core/source/schema";
 import { defineDocs } from "fumadocs-mdx/config";
-import { withOverlay } from "@docs-overlay/fumadocs/schema";
+import { withOverlay } from "docs-overlay-fumadocs/schema";
 
 export const docs = defineDocs({
   dir: "content/docs",
@@ -57,7 +57,7 @@ export const docs = defineDocs({
 // lib/source.ts
 import { loader } from "fumadocs-core/source";
 import { docs } from "collections/server";
-import { overlaySource } from "@docs-overlay/fumadocs";
+import { overlaySource } from "docs-overlay-fumadocs";
 
 export const overlay = overlaySource({
   source: docs.toFumadocsSource(),

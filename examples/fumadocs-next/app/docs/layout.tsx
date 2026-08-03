@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { DocsLayout } from "fumadocs-ui/layouts/docs";
 
-import { versionTabs } from "@docs-overlay/fumadocs";
+import { versionTabs } from "docs-overlay-fumadocs";
 
 import { baseOptions } from "@/lib/layout.shared";
 import { overlay, reportDiagnostics, source } from "@/lib/source";

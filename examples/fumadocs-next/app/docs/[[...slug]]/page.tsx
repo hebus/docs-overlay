@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 
-import { resolveRoute, staticParams } from "@docs-overlay/fumadocs";
+import { resolveRoute, staticParams } from "docs-overlay-fumadocs";
 
 import { overlay, source } from "@/lib/source";
 

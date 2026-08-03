@@ -14,7 +14,7 @@ import { z } from "zod";
  * // source.config.ts
  * import { pageSchema } from "fumadocs-core/source/schema";
  * import { defineDocs } from "fumadocs-mdx/config";
- * import { withOverlay } from "@docs-overlay/fumadocs/schema";
+ * import { withOverlay } from "docs-overlay-fumadocs/schema";
  *
  * export const docs = defineDocs({
  *   dir: "content/docs",

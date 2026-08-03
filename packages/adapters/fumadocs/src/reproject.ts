@@ -1,4 +1,4 @@
-import type { ContentEntry, Overlay, Version, VersionId } from "@docs-overlay/core";
+import type { ContentEntry, Overlay, Version, VersionId } from "docs-overlay";
 import type { MetaData, PageData, StaticSource, VirtualFile } from "fumadocs-core/source";
 
 import { defaultVersionSegment, reSegment, slash, withSegment, type VersionSegmentFn } from "./paths.js";

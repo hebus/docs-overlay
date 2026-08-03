@@ -4,10 +4,10 @@ description: The core/adapter boundary, and how it is kept honest.
 ---
 
 ```
-@docs-overlay/fumadocs        (adapter)
+docs-overlay-fumadocs        (adapter)
             |
             v
-     @docs-overlay/core       (engine)
+     docs-overlay       (engine)
 ```
 
 The dependency direction is one-way and enforced by tests, not by convention. Adding support for
@@ -30,7 +30,7 @@ of a documentation framework?_
 
 ## The rules the core lives by
 
-**Zero runtime dependencies, no Node built-ins.** `@docs-overlay/core` runs in a browser, a worker or
+**Zero runtime dependencies, no Node built-ins.** `docs-overlay` runs in a browser, a worker or
 an edge runtime. The semver comparator is sixty hand-written lines rather than a dependency.
 
 **Synchronous.** A Fumadocs `StaticSource` is already a materialised array, and making the core async

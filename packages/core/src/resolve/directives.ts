@@ -14,7 +14,7 @@ export const NO_DIRECTIVES: OverlayDirectives = Object.freeze({});
  *
  * > Fumadocs' `pageSchema` is a zod object in `strip` mode, so `overlay:` is dropped from
  * > frontmatter unless the consumer widens the schema. That failure is silent, which is why
- * > `@docs-overlay/fumadocs/schema` exports `withOverlay()`.
+ * > `docs-overlay-fumadocs/schema` exports `withOverlay()`.
  */
 export function defaultReadDirectives<M>(entry: ContentEntry<M>): OverlayDirectives | undefined {
   const meta: unknown = entry.meta;

@@ -1,4 +1,4 @@
-// Proves @docs-overlay/core works at RUNTIME with nothing else installed.
+// Proves docs-overlay works at RUNTIME with nothing else installed.
 //
 // The architecture test checks the sources and the manifest; this checks the artefact. It packs the
 // tarball, unpacks it into a temporary directory with no node_modules at all, and imports it there.
@@ -71,7 +71,7 @@ console.log("ok");
   const output = run(process.execPath, [probe], sandbox).trim();
   if (output !== "ok") throw new Error(`probe printed ${JSON.stringify(output)}`);
 
-  console.log(`@docs-overlay/core resolves and runs with zero dependencies installed (${filename})`);
+  console.log(`docs-overlay resolves and runs with zero dependencies installed (${filename})`);
 } finally {
   rmSync(sandbox, { recursive: true, force: true });
 }

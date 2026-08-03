@@ -1,8 +1,8 @@
 /**
- * Public surface of `@docs-overlay/fumadocs`.
+ * Public surface of `docs-overlay-fumadocs`.
  *
  * This package re-projects an existing Fumadocs `StaticSource` through the overlay resolver in
- * `@docs-overlay/core`. Fumadocs keeps compiling the MDX; the core only ever sees paths and opaque
+ * `docs-overlay`. Fumadocs keeps compiling the MDX; the core only ever sees paths and opaque
  * metadata.
  *
  * `withOverlay()` lives in the `./schema` subpath so that `zod` stays an optional peer.

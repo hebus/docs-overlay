@@ -1,7 +1,7 @@
 import { loader } from "fumadocs-core/source";
 import { docs } from "collections/server";
 
-import { findOrphanPages, overlaySource } from "@docs-overlay/fumadocs";
+import { findOrphanPages, overlaySource } from "docs-overlay-fumadocs";
 
 /**
  * The whole integration. Compared with an unversioned Fumadocs site, this is the entire diff:

@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 /**
  * The one architectural rule of this repository, made executable.
  *
- * `@docs-overlay/core` must stay usable anywhere — a browser, a worker, an edge runtime — and must
+ * `docs-overlay` must stay usable anywhere — a browser, a worker, an edge runtime — and must
  * never learn about a documentation framework. A rule that only lives in a README gets broken; this
  * suite fails the build instead.
  *
@@ -19,7 +19,7 @@ const FORBIDDEN = [
   { label: "react", pattern: /^react(\/|$)/, why: "React is a rendering concern; it belongs in an adapter." },
   { label: "react-dom", pattern: /^react-dom(\/|$)/, why: "React is a rendering concern; it belongs in an adapter." },
   { label: "next", pattern: /^next(\/|$)/, why: "Next.js is a framework; it belongs in an adapter." },
-  { label: "fumadocs-*", pattern: /^fumadocs(-|\/|$)/, why: "Fumadocs is a framework; it belongs in @docs-overlay/fumadocs." },
+  { label: "fumadocs-*", pattern: /^fumadocs(-|\/|$)/, why: "Fumadocs is a framework; it belongs in docs-overlay-fumadocs." },
   { label: "astro", pattern: /^astro(\/|$)/, why: "Astro is a framework; it belongs in an adapter." },
   { label: "nextra", pattern: /^nextra(\/|$)/, why: "Nextra is a framework; it belongs in an adapter." },
   { label: "vitepress", pattern: /^vitepress(\/|$)/, why: "VitePress is a framework; it belongs in an adapter." },
@@ -62,7 +62,7 @@ function importsOf(files: readonly string[]): Import[] {
   return found;
 }
 
-describe("@docs-overlay/core stays framework-agnostic", () => {
+describe("docs-overlay stays framework-agnostic", () => {
   const files = shippedFiles(sourceRoot);
   const imports = importsOf(files);
 

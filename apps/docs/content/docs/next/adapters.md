@@ -4,7 +4,7 @@ description: What the engine gives you, and the three details that break a site 
 ---
 
 An adapter maps the overlay engine onto one documentation framework. It depends on
-`@docs-overlay/core`; the core never depends on it.
+`docs-overlay`; the core never depends on it.
 
 ## What the core gives you
 

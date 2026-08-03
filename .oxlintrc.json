@@ -51,7 +51,7 @@
                   "os",
                   "crypto"
                 ],
-                "message": "@docs-overlay/core must stay framework-agnostic and free of Node built-ins. Put this in an adapter."
+                "message": "docs-overlay must stay framework-agnostic and free of Node built-ins. Put this in an adapter."
               }
             ]
           }

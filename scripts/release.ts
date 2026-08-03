@@ -19,10 +19,13 @@ import * as p from "@clack/prompts";
  * the tag would be the only place the discrepancy was visible.
  *
  * `--dry-run` runs every check and prints what would happen, without prompting, publishing or tagging.
+ * `--yes` skips the confirmation, for automation. The prompt exists to protect a human from an
+ * accidental publish, so prefer running without it.
  */
 
 const REGISTRY = "https://registry.npmjs.org/";
 const DRY_RUN = process.argv.includes("--dry-run");
+const ASSUME_YES = process.argv.includes("--yes");
 
 /** Publishable workspaces, in dependency order: the adapter depends on the core. */
 const PACKAGES = ["packages/core", "packages/adapters/fumadocs"];
@@ -129,6 +132,8 @@ async function main(): Promise<void> {
       p.log.step(`would publish ${entry.name}@${entry.version} to npmjs`);
       p.log.step(`would tag ${entry.name}@${entry.version}${tagExists(`${entry.name}@${entry.version}`) ? " (tag already exists — would skip)" : ""}`);
     }
+  } else if (ASSUME_YES) {
+    p.log.warn("--yes given; publishing without confirmation.");
   } else {
     const confirmed = await p.confirm({
       message: `Build and publish ${pending.length === 1 ? "this package" : `these ${pending.length} packages`} to npmjs?`,
@@ -158,7 +163,7 @@ async function main(): Promise<void> {
   }
 
   for (const entry of pending) {
-    run(`npm publish -w ${entry.name} --registry ${REGISTRY} --access public`);
+    run(`npm publish -w ${entry.name} --registry ${REGISTRY}`);
     p.log.success(`${entry.name}@${entry.version} published`);
   }
 

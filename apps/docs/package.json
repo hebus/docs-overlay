@@ -1,5 +1,5 @@
 {
-  "name": "@docs-overlay/docs",
+  "name": "docs-overlay-site",
   "version": "0.0.0",
   "private": true,
   "description": "The documentation site for docs-overlay, versioned with docs-overlay.",
@@ -13,8 +13,8 @@
     "start": "npx serve out"
   },
   "dependencies": {
-    "@docs-overlay/core": "*",
-    "@docs-overlay/fumadocs": "*",
+    "docs-overlay": "*",
+    "docs-overlay-fumadocs": "*",
     "fumadocs-core": "^16.14.0",
     "fumadocs-mdx": "^15.2.2",
     "fumadocs-ui": "^16.14.0",

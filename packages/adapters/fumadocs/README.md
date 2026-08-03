@@ -1,4 +1,4 @@
-# @docs-overlay/fumadocs
+# docs-overlay-fumadocs
 
 Fumadocs adapter for [docs-overlay](../../../README.md) — versioned documentation where you author
 only the diff between versions.
@@ -10,14 +10,14 @@ paths and opaque metadata.
 > [!IMPORTANT]
 > `pageSchema` is a zod object in `strip` mode, so an `overlay:` key in frontmatter is **silently
 > dropped** before it reaches `page.data`. Widen your schema with `withOverlay(pageSchema)` from
-> `@docs-overlay/fumadocs/schema`, or no directive will have any effect — and nothing will tell you
+> `docs-overlay-fumadocs/schema`, or no directive will have any effect — and nothing will tell you
 > why.
 
 ```ts
 // lib/source.ts
 import { loader } from "fumadocs-core/source";
 import { docs } from "collections/server";
-import { overlaySource } from "@docs-overlay/fumadocs";
+import { overlaySource } from "docs-overlay-fumadocs";
 
 export const overlay = overlaySource({
   source: docs.toFumadocsSource(),
@@ -52,7 +52,7 @@ inside the version it was written in.
 | `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                                   |
 | `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                                   |
 | `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                                           |
-| `withOverlay(schema)`                    | From `@docs-overlay/fumadocs/schema`. Mandatory — see above.                                              |
+| `withOverlay(schema)`                    | From `docs-overlay-fumadocs/schema`. Mandatory — see above.                                               |
 
 ## Two things that will bite otherwise
 

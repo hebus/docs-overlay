@@ -1,4 +1,4 @@
-import { createOverlay, type Diagnostic, type DiagnosticSink, type Overlay, type VersionId, type VersionOverrides } from "@docs-overlay/core";
+import { createOverlay, type Diagnostic, type DiagnosticSink, type Overlay, type VersionId, type VersionOverrides } from "docs-overlay";
 import type { StaticSource } from "fumadocs-core/source";
 
 import { appendRest, buildMetaFiles, type MetaMerger } from "./meta.js";

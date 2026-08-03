@@ -1,4 +1,4 @@
-import type { SourcePath } from "@docs-overlay/core";
+import type { SourcePath } from "docs-overlay";
 import type { DynamicSource, StaticSource } from "fumadocs-core/source";
 
 import { overlaySource, type OverlayFumadocsOptions, type OverlaySource } from "./overlay-source.js";

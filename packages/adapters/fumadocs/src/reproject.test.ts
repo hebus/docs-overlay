@@ -1,4 +1,4 @@
-import { createOverlay, type Overlay } from "@docs-overlay/core";
+import { createOverlay, type Overlay } from "docs-overlay";
 import { describe, expect, it } from "vitest";
 
 import { fromFumadocsSource, toFumadocsSource, toFumadocsSourceAll, type FumadocsMeta } from "./reproject.js";

@@ -1,4 +1,4 @@
-import type { Version, VersionId } from "@docs-overlay/core";
+import type { Version, VersionId } from "docs-overlay";
 
 import type { VersionSegmentFn } from "./paths.js";
 

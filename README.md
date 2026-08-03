@@ -15,10 +15,10 @@ snapshot-based versioning tool.
 
 ## Packages
 
-| Package                                                | Role                                                                                                                       |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| [`@docs-overlay/core`](packages/core)                  | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
-| [`@docs-overlay/fumadocs`](packages/adapters/fumadocs) | Fumadocs / Next.js adapter.                                                                                                |
+| Package                                               | Role                                                                                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [`docs-overlay`](packages/core)                       | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
+| [`docs-overlay-fumadocs`](packages/adapters/fumadocs) | Fumadocs / Next.js adapter.                                                                                                |
 
 Adapters depend on the core, never the reverse. Adding support for another framework means
 writing an adapter — it must never require a change to the core.
@@ -67,7 +67,7 @@ what disappears in that release.
 // source.config.ts
 import { pageSchema } from "fumadocs-core/source/schema";
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
-import { withOverlay } from "@docs-overlay/fumadocs/schema";
+import { withOverlay } from "docs-overlay-fumadocs/schema";
 
 export const docs = defineDocs({
   dir: "content/docs",
@@ -81,7 +81,7 @@ export default defineConfig({});
 // lib/source.ts
 import { loader } from "fumadocs-core/source";
 import { docs } from "collections/server";
-import { overlaySource } from "@docs-overlay/fumadocs";
+import { overlaySource } from "docs-overlay-fumadocs";
 
 export const overlay = overlaySource({
   source: docs.toFumadocsSource(),
@@ -101,7 +101,7 @@ export const source = loader({
 
 ```tsx
 // app/docs/[[...slug]]/page.tsx
-import { resolveRoute, staticParams } from "@docs-overlay/fumadocs";
+import { resolveRoute, staticParams } from "docs-overlay-fumadocs";
 import { overlay, source } from "@/lib/source";
 
 export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {

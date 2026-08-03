@@ -1,4 +1,4 @@
-import type { Slug } from "@docs-overlay/core";
+import type { Slug } from "docs-overlay";
 
 import type { OverlaySource } from "./overlay-source.js";
 

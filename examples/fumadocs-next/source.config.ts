@@ -1,7 +1,7 @@
 import { pageSchema } from "fumadocs-core/source/schema";
 import { defineConfig, defineDocs } from "fumadocs-mdx/config";
 
-import { withOverlay } from "@docs-overlay/fumadocs/schema";
+import { withOverlay } from "docs-overlay-fumadocs/schema";
 
 // `pageSchema` is a zod object in `strip` mode, so `overlay:` in frontmatter is thrown away unless
 // the schema is widened. Remove `withOverlay()` and this site still builds — it just stops deleting,

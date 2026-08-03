@@ -1,4 +1,4 @@
-# @docs-overlay/core
+# docs-overlay
 
 Framework-agnostic engine for **versioned documentation with overlay inheritance**.
 
@@ -10,6 +10,6 @@ and zero runtime dependencies.
 Framework integration lives in adapters, which depend on this package and never the other way
 round:
 
-- [`@docs-overlay/fumadocs`](../adapters/fumadocs) — Fumadocs / Next.js
+- [`docs-overlay-fumadocs`](../adapters/fumadocs) — Fumadocs / Next.js
 
 See the [repository README](../../README.md) for the authoring convention and the full design.

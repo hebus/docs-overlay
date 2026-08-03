@@ -41,7 +41,7 @@ injecté par l'adapter.
 
 ```md
 ---
-"@docs-overlay/core": minor
+"docs-overlay": minor
 ---
 
 Add `getDependents()` so adapters can invalidate only the versions a changed file actually feeds.

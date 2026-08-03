@@ -1,4 +1,4 @@
-import type { DiagnosticSink, Overlay, ResolvedPage, VersionId } from "@docs-overlay/core";
+import type { DiagnosticSink, Overlay, ResolvedPage, VersionId } from "docs-overlay";
 import type { MetaData, VirtualFile } from "fumadocs-core/source";
 
 import { reSegment } from "./paths.js";

@@ -15,7 +15,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build -w @docs-overlay/core -w @docs-overlay/fumadocs",
+    "build": "npm run build -w docs-overlay -w docs-overlay-fumadocs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc -p packages/core && tsc -p packages/core/test && tsc -p packages/adapters/fumadocs",
@@ -30,8 +30,8 @@
     "changeset:version": "changeset version",
     "release": "tsx scripts/release.ts",
     "prepare": "husky",
-    "build:example": "npm run build -w @docs-overlay/example-fumadocs-next",
-    "build:docs": "npm run build -w @docs-overlay/docs",
+    "build:example": "npm run build -w docs-overlay-example",
+    "build:docs": "npm run build -w docs-overlay-site",
     "release:dry": "tsx scripts/release.ts --dry-run"
   },
   "devDependencies": {

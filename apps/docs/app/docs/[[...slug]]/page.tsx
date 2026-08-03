@@ -4,7 +4,7 @@ import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layo
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 
-import { resolveRoute, staticParams } from "@docs-overlay/fumadocs";
+import { resolveRoute, staticParams } from "docs-overlay-fumadocs";
 
 import { overlay, source } from "@/lib/source";
 

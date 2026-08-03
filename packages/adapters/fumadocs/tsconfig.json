@@ -5,7 +5,7 @@
     // rebuild. `tsconfig.packaged.json` drops it and typechecks against the built d.ts —
     // that is what validates the published `exports` map. Paths resolve relative to this file.
     "paths": {
-      "@docs-overlay/core": ["../../core/src/index.ts"]
+      "docs-overlay": ["../../core/src/index.ts"]
     }
   },
   "include": ["src"]

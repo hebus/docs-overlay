@@ -1,4 +1,4 @@
-import type { VersionId } from "@docs-overlay/core";
+import type { VersionId } from "docs-overlay";
 
 import type { OverlaySource } from "./overlay-source.js";
 
