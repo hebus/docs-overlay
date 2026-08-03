@@ -1,0 +1,5 @@
+// Root config exists only to anchor editors. Typechecking runs per package: `npm run typecheck`.
+{
+  "files": [],
+  "include": []
+}

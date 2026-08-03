@@ -1,0 +1,30 @@
+name: Changeset check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check:
+    # Skip on the automated release PR, and when the author opted out via the title.
+    if: >-
+      github.head_ref != 'changeset-release/main' &&
+      !contains(github.event.pull_request.title, '#skip-changeset')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a new changeset
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          added=$(git diff --name-only --diff-filter=A "origin/${{ github.base_ref }}"...HEAD -- '.changeset/*.md' \
+            | grep -v '.changeset/README.md' || true)
+          if [ -z "$added" ]; then
+            echo "::error::No changeset added. Run \`npx changeset\` (or create .changeset/<name>.md by hand)."
+            echo "If this PR does not touch a published package, add #skip-changeset to the PR title."
+            exit 1
+          fi
+          echo "Changesets added:"
+          echo "$added"

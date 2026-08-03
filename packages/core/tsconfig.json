@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // `test/` is a separate project (`test/tsconfig.json`): it holds the architecture guard, which
+  // needs `node:fs` — precisely what it forbids inside `src/`.
+  "include": ["src"]
+}

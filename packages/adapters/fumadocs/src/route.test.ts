@@ -1,0 +1,161 @@
+import { describe, expect, it } from "vitest";
+
+import { overlaySource, type OverlayFumadocsOptions } from "./overlay-source.js";
+import { redirectParams, toNetlifyRedirects, toNextRedirects } from "./redirects.js";
+import { resolveRoute, switchVersion } from "./route.js";
+import { fakeStaticSource, fumadocsPage } from "./testing/fake-source.js";
+
+const content = fakeStaticSource(
+  fumadocsPage("1.0.0/index.md"),
+  fumadocsPage("1.0.0/guide/intro.md"),
+  fumadocsPage("1.0.0/guide/old-api.md"),
+  fumadocsPage("1.0.0/guide/legacy.md"),
+  fumadocsPage("2.0.0/guide/new-api.md", { overlay: { renamedFrom: "guide/old-api" } }),
+  fumadocsPage("3.0.0/guide/modern.md"),
+  fumadocsPage("3.0.0/guide/legacy.md", { overlay: { deleted: true, replacedBy: "guide/modern" } }),
+  fumadocsPage("3.0.0/api/index.md", { overlay: { aliases: ["api-reference"] } })
+);
+
+const build = (options: Partial<OverlayFumadocsOptions> = {}) => overlaySource({ source: content, channels: ["next"], ...options });
+
+describe("resolveRoute", () => {
+  it("serves a page under an explicit version segment", () => {
+    expect(resolveRoute(build(), ["3.0.0", "guide", "intro"])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0", "guide", "intro"] });
+  });
+
+  it("404s on a version nobody has heard of", () => {
+    expect(resolveRoute(build(), ["9.9.9", "guide", "intro"])).toEqual({ kind: "not-found" });
+  });
+
+  it("404s on a page the version never had", () => {
+    expect(resolveRoute(build(), ["1.0.0", "guide", "modern"])).toEqual({ kind: "not-found" });
+  });
+
+  it("redirects an old slug from the renaming version onwards", () => {
+    const source = build();
+
+    expect(resolveRoute(source, ["2.0.0", "guide", "old-api"])).toEqual({ kind: "redirect", to: "/docs/2.0.0/guide/new-api", permanent: true });
+    // Still a redirect in a later version: an external link that worked must keep working.
+    expect(resolveRoute(source, ["3.0.0", "guide", "old-api"])).toEqual({ kind: "redirect", to: "/docs/3.0.0/guide/new-api", permanent: true });
+  });
+
+  it("still serves the old slug in the version that predates the rename", () => {
+    expect(resolveRoute(build(), ["1.0.0", "guide", "old-api"]).kind).toBe("page");
+  });
+
+  it("explains a removal instead of 404ing", () => {
+    const result = resolveRoute(build(), ["3.0.0", "guide", "legacy"]);
+
+    expect(result).toEqual({
+      kind: "gone",
+      version: "3.0.0",
+      deletedIn: "3.0.0",
+      lastAvailableUrl: "/docs/2.0.0/guide/legacy",
+      replacedByUrl: "/docs/3.0.0/guide/modern"
+    });
+  });
+
+  it("serves an alias with a canonical pointing at the real slug", () => {
+    const result = resolveRoute(build(), ["3.0.0", "api-reference"]);
+
+    expect(result).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0", "api"], canonicalUrl: "/docs/3.0.0/api" });
+  });
+
+  it("resolves the version landing page", () => {
+    expect(resolveRoute(build(), ["1.0.0"])).toEqual({ kind: "page", version: "1.0.0", slugs: ["1.0.0"] });
+  });
+
+  it("without latestAtRoot, the bare base URL resolves to nothing", () => {
+    expect(resolveRoute(build(), undefined)).toEqual({ kind: "not-found" });
+    expect(resolveRoute(build(), [])).toEqual({ kind: "not-found" });
+  });
+});
+
+describe("resolveRoute with latestAtRoot", () => {
+  const source = () => build({ latestAtRoot: true });
+
+  it("treats a segment-less request as the newest release", () => {
+    expect(resolveRoute(source(), ["guide", "intro"])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0", "guide", "intro"] });
+  });
+
+  it("resolves the bare base URL to the newest release's landing page", () => {
+    expect(resolveRoute(source(), [])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0"] });
+  });
+
+  it("still honours an explicit older segment", () => {
+    expect(resolveRoute(source(), ["1.0.0", "guide", "intro"])).toEqual({ kind: "page", version: "1.0.0", slugs: ["1.0.0", "guide", "intro"] });
+  });
+
+  it("redirects a segment-less old slug within the newest release", () => {
+    expect(resolveRoute(source(), ["guide", "old-api"])).toEqual({ kind: "redirect", to: "/docs/guide/new-api", permanent: true });
+  });
+});
+
+describe("switchVersion", () => {
+  it("keeps the current page when the target version has it", () => {
+    expect(switchVersion(build(), ["3.0.0", "guide", "intro"], "1.0.0")).toEqual({
+      slugs: ["1.0.0", "guide", "intro"],
+      url: "/docs/1.0.0/guide/intro",
+      exact: true
+    });
+  });
+
+  it("falls back to the target's landing page and says the match was not exact", () => {
+    // Clicking through to a version that never had this page must not land on a 404.
+    expect(switchVersion(build(), ["3.0.0", "guide", "modern"], "1.0.0")).toEqual({
+      slugs: ["1.0.0"],
+      url: "/docs/1.0.0",
+      exact: false
+    });
+  });
+
+  it("maps a landing page onto the other version's landing page, exactly", () => {
+    expect(switchVersion(build(), ["3.0.0"], "1.0.0")).toEqual({ slugs: ["1.0.0"], url: "/docs/1.0.0", exact: true });
+  });
+
+  it("follows an alias to the real slug", () => {
+    expect(switchVersion(build(), ["3.0.0", "api-reference"], "next").slugs).toEqual(["next", "api"]);
+  });
+
+  it("lands on the base URL for an unknown target", () => {
+    expect(switchVersion(build(), ["3.0.0", "guide", "intro"], "9.9.9")).toEqual({ slugs: [], url: "/docs", exact: false });
+  });
+});
+
+describe("redirect outputs", () => {
+  it("lists rules for a server deployment", () => {
+    expect(toNextRedirects(build())).toEqual([
+      { source: "/docs/2.0.0/guide/old-api", destination: "/docs/2.0.0/guide/new-api", permanent: true },
+      { source: "/docs/3.0.0/guide/old-api", destination: "/docs/3.0.0/guide/new-api", permanent: true },
+      { source: "/docs/next/guide/old-api", destination: "/docs/next/guide/new-api", permanent: true }
+    ]);
+  });
+
+  it("writes a Netlify redirects file", () => {
+    expect(toNetlifyRedirects(build()).split("\n")[0]).toBe("/docs/2.0.0/guide/old-api /docs/2.0.0/guide/new-api 301");
+  });
+
+  it("adds static params so every old slug gets a real file under output: export", () => {
+    expect(redirectParams(build())).toEqual([
+      { slug: ["2.0.0", "guide", "old-api"] },
+      { slug: ["3.0.0", "guide", "old-api"] },
+      { slug: ["next", "guide", "old-api"] }
+    ]);
+  });
+
+  it("mirrors the URL shape when the newest release sits at the root", () => {
+    expect(redirectParams(build({ latestAtRoot: true }))).toEqual([
+      { slug: ["2.0.0", "guide", "old-api"] },
+      { slug: ["guide", "old-api"] },
+      { slug: ["next", "guide", "old-api"] }
+    ]);
+  });
+
+  it("honours a custom param name", () => {
+    expect(redirectParams(build(), "path")[0]).toEqual({ path: ["2.0.0", "guide", "old-api"] });
+  });
+
+  it("produces no params when nothing was ever renamed", () => {
+    expect(redirectParams(overlaySource({ source: fakeStaticSource(fumadocsPage("1.0.0/a.md")) }))).toEqual([]);
+  });
+});

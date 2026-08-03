@@ -1,0 +1,28 @@
+name: PR CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run fmt:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # Validates the published `exports` map: typechecks the adapter against the
+      # built d.ts of the core, with no source alias in play.
+      - run: npm run typecheck:packaged
+      # Packs the core and runs it in a directory with no node_modules at all, so the
+      # framework-independence rule is proven on the artefact and not only on the sources.
+      - run: npm run verify:independence

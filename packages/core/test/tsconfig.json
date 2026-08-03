@@ -1,0 +1,9 @@
+{
+  // Separate project so `src/` never gets Node's ambient types. If `process` and `Buffer` were in
+  // scope there, the framework-independence guard would be weaker than it looks.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["."]
+}

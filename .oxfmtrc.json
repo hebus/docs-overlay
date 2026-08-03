@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "embeddedLanguageFormatting": "off",
+  "tabWidth": 2,
+  "useTabs": false,
+  "singleQuote": false,
+  "semi": true,
+  "bracketSpacing": true,
+  "arrowParens": "avoid",
+  "trailingComma": "none",
+  "bracketSameLine": true,
+  "printWidth": 160,
+  "endOfLine": "lf",
+  "experimentalSortPackageJson": false,
+  "ignorePatterns": ["**/dist/**", "**/out/**", "**/.next/**", "**/.source/**", "*.html"]
+}

@@ -1,0 +1,63 @@
+{
+  "name": "@docs-overlay/fumadocs",
+  "version": "0.0.0",
+  "description": "Fumadocs adapter for docs-overlay: versioned documentation with overlay inheritance.",
+  "license": "MIT",
+  "author": "Olivier Tomé",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@docs-overlay/core": "*"
+  },
+  "peerDependencies": {
+    "fumadocs-core": ">=16 <17",
+    "zod": "^4"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "fumadocs-core": "^16.14.0",
+    "zod": "^4.1.13"
+  },
+  "keywords": [
+    "fumadocs",
+    "documentation",
+    "docs",
+    "versioning",
+    "overlay",
+    "nextjs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hebus/docs-overlay.git",
+    "directory": "packages/adapters/fumadocs"
+  },
+  "homepage": "https://github.com/hebus/docs-overlay/tree/main/packages/adapters/fumadocs#readme",
+  "bugs": "https://github.com/hebus/docs-overlay/issues",
+  "publishConfig": {
+    "access": "public"
+  }
+}

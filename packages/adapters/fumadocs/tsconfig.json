@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    // Source alias, for local development only: editing the core is visible here without a
+    // rebuild. `tsconfig.packaged.json` drops it and typechecks against the built d.ts —
+    // that is what validates the published `exports` map. Paths resolve relative to this file.
+    "paths": {
+      "@docs-overlay/core": ["../../core/src/index.ts"]
+    }
+  },
+  "include": ["src"]
+}
