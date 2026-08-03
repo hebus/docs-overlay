@@ -14,6 +14,10 @@ import * as p from "@clack/prompts";
  * Idempotent throughout: a version already on npmjs is skipped, and an existing tag is left alone. A
  * half-finished release can simply be run again.
  *
+ * It also refuses to publish from anywhere but the commit that introduced the version. Otherwise a
+ * release cut after a few more commits had landed would ship a tree ahead of its own changelog, and
+ * the tag would be the only place the discrepancy was visible.
+ *
  * `--dry-run` runs every check and prints what would happen, without prompting, publishing or tagging.
  */
 
@@ -28,6 +32,8 @@ interface Manifest {
   readonly version: string;
   readonly private?: boolean;
 }
+
+type Releasable = Manifest & { readonly directory: string };
 
 function run(command: string): void {
   execSync(command, { stdio: "inherit", cwd: process.cwd() });
@@ -63,6 +69,33 @@ function tagExists(tag: string): boolean {
   }
 }
 
+/** Version recorded for a package at a given revision, or `undefined` if it was not there. */
+function versionAt(ref: string, directory: string): string | undefined {
+  try {
+    return (JSON.parse(capture("git", ["show", `${ref}:${directory}/package.json`])) as Manifest).version;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Every version about to be published must have been introduced by `HEAD` — in practice, the merged
+ * "chore: version packages" commit.
+ *
+ * Without this, `npm run release` would happily publish 0.1.0 from a tree that already carried two
+ * unreleased features: npm, the changelog and git would each describe something different.
+ */
+function assertReleaseCommit(entries: readonly Releasable[]): void {
+  const unchanged = entries.filter(entry => versionAt("HEAD~1", entry.directory) === entry.version);
+  if (unchanged.length === 0) return;
+
+  const names = unchanged.map(entry => `${entry.name}@${entry.version}`).join(", ");
+  throw new Error(
+    `HEAD did not introduce ${names}. Release from the commit that bumped the version, so the tarball, ` +
+      "the changelog and the tag agree. If code has landed since, cut a new version instead."
+  );
+}
+
 function assertCleanTree(): void {
   const status = capture("git", ["status", "--porcelain"]);
   if (status !== "") {
@@ -75,7 +108,7 @@ async function main(): Promise<void> {
 
   assertCleanTree();
 
-  const releasable = PACKAGES.map(directory => ({ directory, ...manifest(directory) })).filter(entry => entry.private !== true);
+  const releasable: Releasable[] = PACKAGES.map(directory => ({ directory, ...manifest(directory) })).filter(entry => entry.private !== true);
   const pending = releasable.filter(entry => !publishedVersions(entry.name).includes(entry.version));
 
   for (const entry of releasable) {
@@ -87,6 +120,9 @@ async function main(): Promise<void> {
     p.outro("Nothing to publish.");
     return;
   }
+
+  // Checked after the listing above, so the log shows what was intended before the refusal.
+  assertReleaseCommit(pending);
 
   if (DRY_RUN) {
     for (const entry of pending) {
