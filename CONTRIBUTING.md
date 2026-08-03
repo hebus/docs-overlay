@@ -15,7 +15,7 @@ Two guards fail the build if this slips: `packages/core/test/architecture.test.t
 `no-restricted-imports` override in `.oxlintrc.json`. TypeScript will not catch it on its own, because
 npm hoists the adapter's dependencies where the core can resolve them.
 
-See [docs/architecture.md](docs/architecture.md).
+See [`apps/docs/content/docs/next/architecture.md`](apps/docs/content/docs/next/architecture.md).
 
 ## Before committing
 
@@ -33,7 +33,15 @@ npm run build
 npm run typecheck:packaged     # validates the exports maps
 npm run verify:independence    # runs the core with no node_modules
 npm run build:example          # end-to-end assertions on the exported HTML
+npm run build:docs             # the documentation site
 ```
+
+## Releasing
+
+CI never publishes. It only keeps the "chore: version packages" pull request up to date; merging
+that bumps the versions and writes the changelogs. Publishing is `npm run release`, run locally,
+which builds, re-checks the packaged types and the core's independence, publishes to npmjs and
+pushes one tag per package. It is idempotent, so an interrupted release can just be run again.
 
 ## Changesets
 

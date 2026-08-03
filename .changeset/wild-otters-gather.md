@@ -17,7 +17,7 @@ built-ins, no framework.
 `@docs-overlay/fumadocs` re-projects the source `fumadocs-mdx` already built through that engine.
 `overlaySource()` feeds a single `loader()` covering every version, `resolveRoute()` turns route params
 into a decision, `staticParams()` enumerates every routable slug in the shape the URLs take, and
-`switchVersion()` handles the case where the target version never had the current page. Navigation is
+`switchVersion()` handles the case where the target version never had the current page. `latestAtRoot` serves one version at the base URL — the newest release, or simply the newest version before the first release, exposed as `root` and `isRoot`. Navigation is
 inherited per directory, with an exhaustive `pages` list completed so newly added pages stay visible.
 `withOverlay()` from the `./schema` subpath is required: `pageSchema` strips unknown keys, so overlay
 directives are otherwise discarded in silence.

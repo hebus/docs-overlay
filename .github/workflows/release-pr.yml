@@ -1,4 +1,4 @@
-name: Release
+name: Release PR
 
 on:
   push:
@@ -6,16 +6,15 @@ on:
       - main
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-pr-${{ github.ref }}
   cancel-in-progress: false
 
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
 
 jobs:
-  release:
+  version:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,19 +24,16 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          registry-url: https://registry.npmjs.org
       - run: npm ci
-      - run: npm run build
 
-      # Opens/updates the "chore: version packages" PR while changesets are pending;
-      # publishes to npm once that PR is merged.
+      # Opens or updates the "chore: version packages" pull request while changesets are pending.
+      # Publishing is deliberately **not** done here: `npm run release` is run locally, so the tarball
+      # that reaches npmjs is the one that was verified on a real machine, and no long-lived npm token
+      # has to live in CI.
       - uses: changesets/action@v1
         with:
           version: npm run changeset:version
-          publish: npm run release
           commit: "chore: version packages"
           title: "chore: version packages #skip-changeset"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: "true"

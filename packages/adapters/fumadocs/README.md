@@ -39,20 +39,20 @@ inside the version it was written in.
 
 ## API
 
-| Export                                   | Purpose                                                                                       |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `overlaySource(options)`                 | The projection: `source` for `loader()`, `url` for its URLs, `versions`, `diagnostics`.       |
-| `resolveRoute(overlay, slugs)`           | What the catch-all route should do: `page`, `redirect`, `gone` or `not-found`.                |
-| `staticParams(overlay)`                  | Every routable slug in the URL shape — pages, aliases, old slugs, removed pages.              |
-| `switchVersion(overlay, slugs, to)`      | Where the version switcher should go, with `exact: false` when the page does not exist there. |
-| `versionTabs(overlay)`                   | Data for a switcher, built explicitly rather than auto-detected.                              |
-| `versionTree(source, segment)`           | The sidebar tree scoped to one version.                                                       |
-| `findOrphanPages(source)`                | Pages that are routed but that no tree reaches.                                               |
-| `versionTagOf(page)`                     | Version segment of a page, for tagging a search index.                                        |
-| `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                       |
-| `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                       |
-| `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                               |
-| `withOverlay(schema)`                    | From `@docs-overlay/fumadocs/schema`. Mandatory — see above.                                  |
+| Export                                   | Purpose                                                                                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `overlaySource(options)`                 | The projection: `source` for `loader()`, `url` for its URLs, `versions`, `latest`, `root`, `diagnostics`. |
+| `resolveRoute(overlay, slugs)`           | What the catch-all route should do: `page`, `redirect`, `gone` or `not-found`.                            |
+| `staticParams(overlay)`                  | Every routable slug in the URL shape — pages, aliases, old slugs, removed pages.                          |
+| `switchVersion(overlay, slugs, to)`      | Where the version switcher should go, with `exact: false` when the page does not exist there.             |
+| `versionTabs(overlay)`                   | Data for a switcher, built explicitly rather than auto-detected.                                          |
+| `versionTree(source, segment)`           | The sidebar tree scoped to one version.                                                                   |
+| `findOrphanPages(source)`                | Pages that are routed but that no tree reaches.                                                           |
+| `versionTagOf(page)`                     | Version segment of a page, for tagging a search index.                                                    |
+| `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                                   |
+| `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                                   |
+| `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                                           |
+| `withOverlay(schema)`                    | From `@docs-overlay/fumadocs/schema`. Mandatory — see above.                                              |
 
 ## Two things that will bite otherwise
 

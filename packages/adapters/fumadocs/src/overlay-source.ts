@@ -24,9 +24,13 @@ export interface OverlayFumadocsOptions<S extends StaticSource = StaticSource> {
   /** Display labels, e.g. `{ next: "Next 🚧" }`. */
   readonly labels?: Readonly<Record<VersionId, string>> | undefined;
   /**
-   * Serve the latest release at the base URL, so `/docs/guide/a` is the current documentation and
+   * Serve one version at the base URL, so `/docs/guide/a` is the current documentation and
    * `/docs/11.13.0/guide/a` the old one. This is the Docusaurus URL shape, so migrating a site
    * breaks no existing link.
+   *
+   * That version is the newest release, or — when nothing has been released yet — simply the
+   * newest version, so a project whose documentation precedes its first release still gets clean
+   * URLs.
    */
   readonly latestAtRoot?: boolean | undefined;
   /** How an inherited `meta.json` is adapted to the browsing version. Defaults to {@link appendRest}. */
@@ -44,7 +48,10 @@ export interface OverlaySource<S extends StaticSource = StaticSource> {
   /** The engine, for anything the adapter does not wrap. */
   readonly overlay: Overlay<FumadocsMeta>;
   readonly versions: readonly VersionInfo[];
+  /** The newest release. `undefined` until something has been released. */
   readonly latest: VersionInfo | undefined;
+  /** The version served at the base URL, when `latestAtRoot` is on. */
+  readonly root: VersionInfo | undefined;
   readonly baseUrl: string;
   readonly diagnostics: readonly Diagnostic[];
   /** Adds to {@link diagnostics}, so a loader plugin can report through the same channel. */
@@ -87,13 +94,15 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
   });
 
   const latestId = overlay.latest?.id;
-  const infos = overlay.versions.map(version =>
-    toVersionInfo(version, { baseUrl, segmentOf, labels: options.labels, latestId, latestAtRoot: options.latestAtRoot === true })
-  );
+  // `latest` is a release fact; which version sits at the root is a routing decision. They differ
+  // before the first release, where the newest version is a channel and `latest` is undefined.
+  const rootId = options.latestAtRoot === true ? (latestId ?? overlay.versions.at(-1)?.id) : undefined;
+
+  const infos = overlay.versions.map(version => toVersionInfo(version, { baseUrl, segmentOf, labels: options.labels, latestId, rootId }));
 
   const byId = new Map(infos.map(info => [info.id, info]));
   const bySegment = new Map(infos.map(info => [info.segment, info]));
-  const latestSegment = options.latestAtRoot === true && latestId !== undefined ? byId.get(latestId)?.segment : undefined;
+  const rootSegment = rootId === undefined ? undefined : byId.get(rootId)?.segment;
 
   // Metadata is emitted here rather than by the reprojection, because adapting an inherited
   // navigation list needs the whole picture: which pages this version adds, and which the authoring
@@ -116,12 +125,13 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
     overlay,
     versions: infos,
     latest: latestId === undefined ? undefined : byId.get(latestId),
+    root: rootId === undefined ? undefined : byId.get(rootId),
     baseUrl,
     diagnostics,
     report: onDiagnostic,
     url: slugs => {
       // The slugs always carry the version; only the URL may drop it.
-      const rest = latestSegment !== undefined && slugs[0] === latestSegment ? slugs.slice(1) : slugs;
+      const rest = rootSegment !== undefined && slugs[0] === rootSegment ? slugs.slice(1) : slugs;
       return rest.length === 0 ? baseUrl : `${baseUrl}/${rest.join("/")}`;
     },
     versionOf: id => byId.get(id),

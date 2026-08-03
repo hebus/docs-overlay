@@ -1,7 +1,6 @@
 import type { VersionId } from "@docs-overlay/core";
 
 import type { OverlaySource } from "./overlay-source.js";
-import type { VersionInfo } from "./version-info.js";
 
 export type RouteResolution =
   /** Serve the page. `canonicalUrl` is set when the request came in through an alias. */
@@ -29,7 +28,7 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
   const requested = segments ?? [];
   const fromSegment = requested.length === 0 ? undefined : source.versionOfSegment(requested[0] ?? "");
 
-  const version = fromSegment ?? implicitVersion(source);
+  const version = fromSegment ?? source.root;
   if (version === undefined) return { kind: "not-found" };
 
   const rest = fromSegment === undefined ? requested : requested.slice(1);
@@ -65,11 +64,6 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
     case "unknown-version":
       return { kind: "not-found" };
   }
-}
-
-/** Only the newest release can be addressed without a segment, and only when asked for. */
-function implicitVersion(source: OverlaySource): VersionInfo | undefined {
-  return source.latest?.url === source.baseUrl ? source.latest : undefined;
 }
 
 function lastAvailableUrl(source: OverlaySource, version: VersionId, slug: readonly string[]): string | undefined {

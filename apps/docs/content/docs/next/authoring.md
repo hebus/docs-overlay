@@ -1,4 +1,7 @@
-# Authoring
+---
+title: Authoring
+description: Folders, the four operations, releases and maintenance branches.
+---
 
 ## Folders are the versions
 

@@ -138,7 +138,24 @@ npm run typecheck            # per package, against core sources
 npm run typecheck:packaged   # adapter against the BUILT core d.ts — validates `exports`
 npm run verify:independence  # packs the core and runs it with no node_modules at all
 npm run build:example        # the example site, plus its end-to-end assertions
+npm run build:docs           # the documentation site
 ```
+
+## Releasing
+
+Changesets accumulate on `main`, and the `release-pr` workflow keeps a
+"chore: version packages" pull request up to date. Merging it bumps the versions and writes the
+changelogs.
+
+Publishing is then done **locally**, so the tarball that reaches npmjs is the one verified on a real
+machine and no long-lived npm token has to live in CI:
+
+```bash
+npm run release
+```
+
+It refuses a dirty tree, skips any version already on npmjs, re-runs the packaging and independence
+checks before publishing, and pushes one git tag per package. Running it twice is harmless.
 
 Every change to a published package needs a changeset (`npx changeset`, or write
 `.changeset/<name>.md` by hand); the `changeset-check` workflow blocks the PR otherwise. Put
@@ -146,11 +163,19 @@ Every change to a published package needs a changeset (`npx changeset`, or write
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — the core/adapter boundary and how it is enforced
-- [Resolution](docs/resolution.md) — the fold, the priority order, the truth table
-- [Authoring](docs/authoring.md) — the four operations, releases, maintenance branches
-- [Writing an adapter](docs/adapters.md)
-- [Migrating from Docusaurus](docs/migrating-from-docusaurus.md)
+**https://hebus.github.io/docs-overlay** — and that site is documented with this library, so it is its own proof.
+
+| Page                                                                                  | About                                                        |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [Authoring](apps/docs/content/docs/next/authoring.md)                                 | Folders, the four operations, releases, maintenance branches |
+| [Resolution](apps/docs/content/docs/next/resolution.md)                               | The fold, the priority order, the truth table                |
+| [Architecture](apps/docs/content/docs/next/architecture.md)                           | The core/adapter boundary and how it is kept honest          |
+| [Writing an adapter](apps/docs/content/docs/next/adapters.md)                         | What the engine gives you, and what breaks a site quietly    |
+| [Migrating from Docusaurus](apps/docs/content/docs/next/migrating-from-docusaurus.md) | Folder mapping, steps, honest payoff                         |
+
+The pages live in [`apps/docs/content/docs/next/`](apps/docs/content/docs/next) — one folder, because nothing has been released yet. `0.1.0`
+will add a second one with a `git mv`, at which point the site starts demonstrating the thing it
+describes.
 
 [`examples/fumadocs-next`](examples/fumadocs-next) is a working site with five versions covering
 override, rename, tombstone, re-add, alias and navigation inheritance. Its `postbuild` asserts the

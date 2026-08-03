@@ -159,3 +159,42 @@ describe("redirect outputs", () => {
     expect(redirectParams(overlaySource({ source: fakeStaticSource(fumadocsPage("1.0.0/a.md")) }))).toEqual([]);
   });
 });
+
+describe("the version served at the root", () => {
+  it("is the newest release when there is one", () => {
+    const source = build({ latestAtRoot: true });
+
+    expect(source.root?.id).toBe("3.0.0");
+    expect(source.latest?.id).toBe("3.0.0");
+    expect(source.versionOf("3.0.0")?.isRoot).toBe(true);
+    expect(source.versionOf("next")?.isRoot).toBe(false);
+  });
+
+  it("falls back to the newest version when nothing has been released", () => {
+    // A project whose documentation precedes its first release: `latest` is undefined because the only
+    // version is a channel, yet the URLs should still be clean.
+    const unreleased = overlaySource({
+      source: fakeStaticSource(fumadocsPage("next/index.md"), fumadocsPage("next/guide.md")),
+      channels: ["next"],
+      latestAtRoot: true
+    });
+
+    expect(unreleased.latest).toBeUndefined();
+    expect(unreleased.root?.id).toBe("next");
+    expect(unreleased.url(["next", "guide"])).toBe("/docs/guide");
+    expect(resolveRoute(unreleased, ["guide"])).toEqual({ kind: "page", version: "next", slugs: ["next", "guide"] });
+  });
+
+  it("is nobody when latestAtRoot is off", () => {
+    const source = build();
+
+    expect(source.root).toBeUndefined();
+    expect(source.versions.every(version => !version.isRoot)).toBe(true);
+    expect(source.url(["3.0.0", "guide", "intro"])).toBe("/docs/3.0.0/guide/intro");
+  });
+
+  it("marks the newest release even when it is not the one at the root", () => {
+    const source = build();
+    expect(source.versionOf("3.0.0")?.isLatest).toBe(true);
+  });
+});

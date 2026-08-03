@@ -39,11 +39,11 @@ export function toNetlifyRedirects(source: OverlaySource): string {
  * page in the content tree would have got wrong.
  */
 export function redirectParams<TSlug extends string = "slug">(source: OverlaySource, slug: TSlug = "slug" as TSlug): Record<TSlug, string[]>[] {
-  const latestSegment = source.latest?.url === source.baseUrl ? source.latest.segment : undefined;
+  const rootSegment = source.root?.segment;
 
   return rulesOf(source).map(({ rule, segment }) => {
-    // Mirror the URL shape: the newest release is addressed without its segment.
-    const slugs = segment === latestSegment ? [...rule.from] : [segment, ...rule.from];
+    // Mirror the URL shape: the version at the root is addressed without its segment.
+    const slugs = segment === rootSegment ? [...rule.from] : [segment, ...rule.from];
     return { [slug]: slugs } as Record<TSlug, string[]>;
   });
 }

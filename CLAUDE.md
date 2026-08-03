@@ -1,6 +1,9 @@
 # CLAUDE.md — Instructions pour Claude Code
 
 Monorepo **docs-overlay** : un moteur de documentation versionnée à héritage par overlay.
+`apps/docs` est le site de documentation du projet, versionné par docs-overlay lui-même ;
+`examples/fumadocs-next` est une **fixture de test** — son contenu est volontairement tordu et
+`assert-output.mjs` y assert des chaînes exactes, donc ne jamais fusionner les deux.
 `packages/core` est une **librairie TypeScript pure** (aucun framework, aucune dépendance,
 aucun `node:*`), `packages/adapters/*` sont les intégrations framework. npm workspaces, build
 Vite en mode librairie **ESM only** + `tsc` pour les `.d.ts`, tests Vitest, lint/format
@@ -66,6 +69,14 @@ Add `getDependents()` so adapters can invalidate only the versions a changed fil
   qui valide la map `exports`. Ne pas ajouter de `paths` vers `src` ailleurs.
 - Les tests du core sont **fs-free** : les fixtures sont des fabriques TypeScript, pas des
   fichiers sur disque.
+
+## Releases
+
+La CI ne publie jamais. Elle maintient seulement la PR « chore: version packages » ; la merger
+bumpe les versions et écrit les changelogs. La publication est **locale** : `npm run release`
+(build, revalidation des types packagés et de l'indépendance du core, publish npmjs, un tag par
+package). Idempotent : une release interrompue se relance telle quelle. Comme partout ailleurs,
+**ne jamais la lancer sans instruction explicite de l'utilisateur**.
 
 ## Règles git absolues
 

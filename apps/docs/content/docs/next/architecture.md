@@ -1,4 +1,7 @@
-# Architecture
+---
+title: Architecture
+description: The core/adapter boundary, and how it is kept honest.
+---
 
 ```
 @docs-overlay/fumadocs        (adapter)

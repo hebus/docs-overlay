@@ -11,6 +11,7 @@
   "workspaces": [
     "packages/core",
     "packages/adapters/*",
+    "apps/*",
     "examples/*"
   ],
   "scripts": {
@@ -27,18 +28,21 @@
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",
-    "release": "changeset publish",
+    "release": "tsx scripts/release.ts",
     "prepare": "husky",
-    "build:example": "npm run build -w @docs-overlay/example-fumadocs-next"
+    "build:example": "npm run build -w @docs-overlay/example-fumadocs-next",
+    "build:docs": "npm run build -w @docs-overlay/docs"
   },
   "devDependencies": {
     "@changesets/changelog-git": "^0.2.1",
     "@changesets/cli": "^2.31.1",
+    "@clack/prompts": "^1.1.0",
     "@types/node": "^26.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "oxfmt": "^0.62.0",
     "oxlint": "^1.77.0",
+    "tsx": "^4.21.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.10"

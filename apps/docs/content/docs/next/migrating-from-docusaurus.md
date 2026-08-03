@@ -1,4 +1,7 @@
-# Migrating from Docusaurus versioning
+---
+title: Migrating from Docusaurus
+description: Folder mapping, steps, and an honest look at the payoff.
+---
 
 Docusaurus stores each version as a full snapshot: `versioned_docs/version-11.14.0/` next to
 `versioned_docs/version-11.13.0/`, plus `versions.json` and one `versioned_sidebars/*.json` per

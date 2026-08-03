@@ -1,4 +1,7 @@
-# Resolution
+---
+title: Resolution
+description: How the overlay chain is folded, and what resolve() answers.
+---
 
 ## Fold forward, do not walk at query time
 

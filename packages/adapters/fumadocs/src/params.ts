@@ -36,8 +36,8 @@ export function staticParams<TSlug extends string = "slug">(source: OverlaySourc
   const seen = new Set<string>();
 
   for (const info of source.versions) {
-    // A version served at the base URL is addressed without its segment.
-    const prefix = info.url === source.baseUrl ? [] : [info.segment];
+    // The version served at the base URL is addressed without its segment.
+    const prefix = info.isRoot ? [] : [info.segment];
 
     for (const entry of source.overlay.getEntries(info.id)) {
       if (!wanted.has(entry.kind)) continue;

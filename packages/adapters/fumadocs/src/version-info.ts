@@ -9,8 +9,10 @@ export interface VersionInfo {
   readonly segment: string;
   /** Display label. Defaults to the id; override through `labels` or `versions[id].meta.label`. */
   readonly label: string;
-  /** The highest release — the one served at the base URL when `latestAtRoot` is on. */
+  /** The highest release. `false` for every version when nothing has been released yet. */
   readonly isLatest: boolean;
+  /** Served at the base URL, with no segment in its URLs. At most one version is. */
+  readonly isRoot: boolean;
   /** An unreleased channel such as `next`. */
   readonly isChannel: boolean;
   /** Landing page of the version. */
@@ -22,20 +24,22 @@ export interface VersionInfoContext {
   readonly segmentOf: VersionSegmentFn;
   readonly labels: Readonly<Record<VersionId, string>> | undefined;
   readonly latestId: VersionId | undefined;
-  readonly latestAtRoot: boolean;
+  /** Version to serve at the base URL, or `undefined` to give every version a segment. */
+  readonly rootId: VersionId | undefined;
 }
 
 export function toVersionInfo(version: Version, context: VersionInfoContext): VersionInfo {
   const segment = context.segmentOf(version);
-  const isLatest = version.id === context.latestId;
+  const isRoot = version.id === context.rootId;
 
   return {
     id: version.id,
     segment,
     label: context.labels?.[version.id] ?? labelFromMeta(version.meta) ?? version.id,
-    isLatest,
+    isLatest: version.id === context.latestId,
+    isRoot,
     isChannel: version.channel !== undefined,
-    url: context.latestAtRoot && isLatest ? context.baseUrl : `${context.baseUrl}/${segment}`
+    url: isRoot ? context.baseUrl : `${context.baseUrl}/${segment}`
   };
 }
 

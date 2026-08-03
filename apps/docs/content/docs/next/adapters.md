@@ -1,4 +1,7 @@
-# Writing an adapter
+---
+title: Writing an adapter
+description: What the engine gives you, and the three details that break a site quietly.
+---
 
 An adapter maps the overlay engine onto one documentation framework. It depends on
 `@docs-overlay/core`; the core never depends on it.
