@@ -27,7 +27,7 @@
     "fmt:check": "oxfmt --check",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "changeset:version": "changeset version",
+    "changeset:version": "changeset version && npm install --package-lock-only",
     "release": "tsx scripts/release.ts",
     "prepare": "husky",
     "build:example": "npm run build -w docs-overlay-example",

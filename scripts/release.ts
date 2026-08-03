@@ -14,9 +14,11 @@ import * as p from "@clack/prompts";
  * Idempotent throughout: a version already on npmjs is skipped, and an existing tag is left alone. A
  * half-finished release can simply be run again.
  *
- * It also refuses to publish from anywhere but the commit that introduced the version. Otherwise a
- * release cut after a few more commits had landed would ship a tree ahead of its own changelog, and
- * the tag would be the only place the discrepancy was visible.
+ * It also refuses to publish a package whose own files have changed since its version was set.
+ * Otherwise a release cut after a few more commits had landed would ship a tree ahead of its own
+ * changelog, and the tag would be the only place the discrepancy was visible. Commits that leave the
+ * package untouched — a lockfile refresh, a workflow tweak, a root README — are fine, because they
+ * cannot change what ships.
  *
  * `--dry-run` runs every check and prints what would happen, without prompting, publishing or tagging.
  * `--yes` skips the confirmation, for automation. The prompt exists to protect a human from an
@@ -81,21 +83,48 @@ function versionAt(ref: string, directory: string): string | undefined {
   }
 }
 
+/** The commit that set a package's current version. */
+function versionCommit(entry: Releasable): string | undefined {
+  const history = capture("git", ["log", "--format=%H", "--", `${entry.directory}/package.json`])
+    .split("\n")
+    .filter(Boolean);
+
+  // Newest first: the introducing commit is the oldest one still carrying this version.
+  for (const sha of history) {
+    if (versionAt(sha, entry.directory) !== entry.version) continue;
+    if (versionAt(`${sha}~1`, entry.directory) !== entry.version) return sha;
+  }
+  return undefined;
+}
+
 /**
- * Every version about to be published must have been introduced by `HEAD` — in practice, the merged
- * "chore: version packages" commit.
+ * Nothing inside a package may have changed since its version was set.
  *
- * Without this, `npm run release` would happily publish 0.1.0 from a tree that already carried two
- * unreleased features: npm, the changelog and git would each describe something different.
+ * That, and not "HEAD is the version commit", is the property worth enforcing: publishing 0.1.0 from a
+ * tree that already carries two unreleased features would leave npm, the changelog and git each
+ * describing something different. Refreshing the lockfile after a bump, on the other hand, changes
+ * nothing that ships — and demanding an untouched HEAD would have forbidden it.
  */
 function assertReleaseCommit(entries: readonly Releasable[]): void {
-  const unchanged = entries.filter(entry => versionAt("HEAD~1", entry.directory) === entry.version);
-  if (unchanged.length === 0) return;
+  const problems: string[] = [];
 
-  const names = unchanged.map(entry => `${entry.name}@${entry.version}`).join(", ");
+  for (const entry of entries) {
+    const sha = versionCommit(entry);
+    if (sha === undefined) {
+      problems.push(`${entry.name}: cannot find the commit that set ${entry.version}`);
+      continue;
+    }
+
+    const changed = capture("git", ["diff", "--name-only", `${sha}..HEAD`, "--", entry.directory]);
+    if (changed !== "") {
+      const files = changed.split("\n").filter(Boolean);
+      problems.push(`${entry.name}@${entry.version}: ${files.length} file(s) changed since ${sha.slice(0, 7)} — ${files.slice(0, 3).join(", ")}`);
+    }
+  }
+
+  if (problems.length === 0) return;
   throw new Error(
-    `HEAD did not introduce ${names}. Release from the commit that bumped the version, so the tarball, ` +
-      "the changelog and the tag agree. If code has landed since, cut a new version instead."
+    `${problems.join("; ")}. A published version must match the tree its changelog describes, so cut a ` + "new version rather than shipping this one."
   );
 }
 
