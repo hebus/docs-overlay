@@ -5,11 +5,12 @@
   "description": "Executable documentation for docs-overlay: five versions exercising override, rename, tombstone, re-add and navigation inheritance.",
   "type": "module",
   "scripts": {
+    "predev": "fumadocs-mdx",
     "dev": "next dev",
+    "prebuild": "fumadocs-mdx",
     "build": "next build",
     "postbuild": "node scripts/assert-output.mjs",
-    "start": "npx serve out",
-    "postinstall": "fumadocs-mdx"
+    "start": "npx serve out"
   },
   "dependencies": {
     "@docs-overlay/core": "*",
