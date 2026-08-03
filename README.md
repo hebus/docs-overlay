@@ -167,17 +167,17 @@ Every change to a published package needs a changeset (`npx changeset`, or write
 
 **https://hebus.github.io/docs-overlay** — and that site is documented with this library, so it is its own proof.
 
-| Page                                                                                  | About                                                        |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [Authoring](apps/docs/content/docs/next/authoring.md)                                 | Folders, the four operations, releases, maintenance branches |
-| [Resolution](apps/docs/content/docs/next/resolution.md)                               | The fold, the priority order, the truth table                |
-| [Architecture](apps/docs/content/docs/next/architecture.md)                           | The core/adapter boundary and how it is kept honest          |
-| [Writing an adapter](apps/docs/content/docs/next/adapters.md)                         | What the engine gives you, and what breaks a site quietly    |
-| [Migrating from Docusaurus](apps/docs/content/docs/next/migrating-from-docusaurus.md) | Folder mapping, steps, honest payoff                         |
+| Page                                                                                              | About                                                        |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [Authoring](https://hebus.github.io/docs-overlay/docs/authoring/)                                 | Folders, the four operations, releases, maintenance branches |
+| [Resolution](https://hebus.github.io/docs-overlay/docs/resolution/)                               | The fold, the priority order, the truth table                |
+| [Architecture](https://hebus.github.io/docs-overlay/docs/architecture/)                           | The core/adapter boundary and how it is kept honest          |
+| [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/)                         | What the engine gives you, and what breaks a site quietly    |
+| [Migrating from Docusaurus](https://hebus.github.io/docs-overlay/docs/migrating-from-docusaurus/) | Folder mapping, steps, honest payoff                         |
 
-The pages live in [`apps/docs/content/docs/next/`](apps/docs/content/docs/next) — one folder, because nothing has been released yet. `0.1.0`
-will add a second one with a `git mv`, at which point the site starts demonstrating the thing it
-describes.
+The pages live in [`apps/docs/content/docs/`](apps/docs/content/docs) — `0.1.0/` holds all of them and
+`next/` is an empty folder that inherits every one. Cutting that version was
+`git mv next 0.1.0 && mkdir next`, which git recorded as seven renames and nothing else.
 
 [`examples/fumadocs-next`](examples/fumadocs-next) is a working site with five versions covering
 override, rename, tombstone, re-add, alias and navigation inheritance. Its `postbuild` asserts the

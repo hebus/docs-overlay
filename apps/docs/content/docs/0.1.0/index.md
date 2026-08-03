@@ -9,7 +9,7 @@ changed — an override, a new page, a rename, or a tombstone. Everything else i
 Cutting a release becomes:
 
 ```bash
-git mv content/docs/next content/docs/0.2.0 && mkdir content/docs/next
+git mv content/docs/next content/docs/0.1.0 && mkdir content/docs/next
 ```
 
 Git records that as renames, so the content diff is **zero bytes**, and the emptied channel inherits
@@ -17,12 +17,13 @@ everything again.
 
 ## This site is its own proof
 
-You are reading documentation served by docs-overlay. `next/` is the only folder that exists today,
-because nothing has been released yet — and the URLs are already clean, because the newest version is
-served at the root whether or not it is a release.
+You are reading documentation served by docs-overlay. Two versions exist: `0.1.0`, which you are on,
+and `next`, where unreleased changes go. Switch between them in the sidebar.
 
-When `0.1.0` ships, the command above is all it takes for this site to grow a second version. Every
-page nobody touches afterwards will keep being served from the very file you are reading now.
+`next/` is an **empty folder**. Every page it serves comes from the `0.1.0` file of the same name —
+including this one. It was created by the command above, which git recorded as seven renames and
+nothing else: zero insertions, zero deletions. And `/docs/authoring` still points at the release, so
+cutting a version broke no link.
 
 ## Packages
 

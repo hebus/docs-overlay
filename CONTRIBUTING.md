@@ -15,7 +15,8 @@ Two guards fail the build if this slips: `packages/core/test/architecture.test.t
 `no-restricted-imports` override in `.oxlintrc.json`. TypeScript will not catch it on its own, because
 npm hoists the adapter's dependencies where the core can resolve them.
 
-See [`apps/docs/content/docs/next/architecture.md`](apps/docs/content/docs/next/architecture.md).
+See [Architecture](https://hebus.github.io/docs-overlay/docs/architecture/), whose source is
+[`apps/docs/content/docs/0.1.0/architecture.md`](apps/docs/content/docs/0.1.0/architecture.md).
 
 ## Before committing
 

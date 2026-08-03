@@ -6,10 +6,9 @@ import { findOrphanPages, overlaySource } from "docs-overlay-fumadocs";
 /**
  * This site is documented with the library it documents.
  *
- * Only `content/docs/next/` exists today, because only one release does. `latestAtRoot` is on all the
- * same, so the URLs are already `/docs/authoring` rather than `/docs/next/authoring` — and when 0.2.0
- * ships, `git mv content/docs/next content/docs/0.2.0 && mkdir content/docs/next` grows a second
- * version without touching a single page or a single line here.
+ * `content/docs/0.1.0/` holds every page; `content/docs/next/` is empty and inherits all of them.
+ * `latestAtRoot` keeps the release at `/docs/authoring` and puts the channel at
+ * `/docs/next/authoring`, so cutting 0.1.0 broke no link and needed no change here.
  */
 export const overlay = overlaySource({
   source: docs.toFumadocsSource(),
