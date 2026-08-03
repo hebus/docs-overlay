@@ -31,7 +31,8 @@
     "release": "tsx scripts/release.ts",
     "prepare": "husky",
     "build:example": "npm run build -w @docs-overlay/example-fumadocs-next",
-    "build:docs": "npm run build -w @docs-overlay/docs"
+    "build:docs": "npm run build -w @docs-overlay/docs",
+    "release:dry": "tsx scripts/release.ts --dry-run"
   },
   "devDependencies": {
     "@changesets/changelog-git": "^0.2.1",

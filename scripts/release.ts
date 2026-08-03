@@ -13,9 +13,12 @@ import * as p from "@clack/prompts";
  *
  * Idempotent throughout: a version already on npmjs is skipped, and an existing tag is left alone. A
  * half-finished release can simply be run again.
+ *
+ * `--dry-run` runs every check and prints what would happen, without prompting, publishing or tagging.
  */
 
 const REGISTRY = "https://registry.npmjs.org/";
+const DRY_RUN = process.argv.includes("--dry-run");
 
 /** Publishable workspaces, in dependency order: the adapter depends on the core. */
 const PACKAGES = ["packages/core", "packages/adapters/fumadocs"];
@@ -68,7 +71,7 @@ function assertCleanTree(): void {
 }
 
 async function main(): Promise<void> {
-  p.intro("docs-overlay — release");
+  p.intro(DRY_RUN ? "docs-overlay — release (dry run)" : "docs-overlay — release");
 
   assertCleanTree();
 
@@ -85,13 +88,20 @@ async function main(): Promise<void> {
     return;
   }
 
-  const confirmed = await p.confirm({
-    message: `Build and publish ${pending.length === 1 ? "this package" : `these ${pending.length} packages`} to npmjs?`,
-    initialValue: false
-  });
-  if (p.isCancel(confirmed) || !confirmed) {
-    p.cancel("Cancelled.");
-    process.exit(0);
+  if (DRY_RUN) {
+    for (const entry of pending) {
+      p.log.step(`would publish ${entry.name}@${entry.version} to npmjs`);
+      p.log.step(`would tag ${entry.name}@${entry.version}${tagExists(`${entry.name}@${entry.version}`) ? " (tag already exists — would skip)" : ""}`);
+    }
+  } else {
+    const confirmed = await p.confirm({
+      message: `Build and publish ${pending.length === 1 ? "this package" : `these ${pending.length} packages`} to npmjs?`,
+      initialValue: false
+    });
+    if (p.isCancel(confirmed) || !confirmed) {
+      p.cancel("Cancelled.");
+      process.exit(0);
+    }
   }
 
   const building = p.spinner();
@@ -105,6 +115,11 @@ async function main(): Promise<void> {
   run("npm run typecheck:packaged");
   run("npm run verify:independence");
   verifying.stop("Artefacts verified.");
+
+  if (DRY_RUN) {
+    p.outro("Dry run complete — nothing was published.");
+    return;
+  }
 
   for (const entry of pending) {
     run(`npm publish -w ${entry.name} --registry ${REGISTRY} --access public`);
