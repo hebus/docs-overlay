@@ -14,8 +14,8 @@ export type { OverlayFumadocsOptions, OverlaySource } from "./overlay-source.js"
 export { overlaySource } from "./overlay-source.js";
 export type { OverlayDynamicOptions, OverlayDynamicSource } from "./dynamic.js";
 export { overlayDynamicSource } from "./dynamic.js";
-export type { PageTreeReader } from "./diagnostics.js";
-export { findOrphanPages, versionTagOf } from "./diagnostics.js";
+export type { PageTreeReader, ScopeReader } from "./diagnostics.js";
+export { findOrphanPages, searchTagsOf, versionTagOf } from "./diagnostics.js";
 export type { VersionTab } from "./tabs.js";
 export { versionTabs, versionTree } from "./tabs.js";
 export type { VersionInfo } from "./version-info.js";

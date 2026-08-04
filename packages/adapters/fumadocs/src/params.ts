@@ -35,9 +35,12 @@ export function staticParams<TSlug extends string = "slug">(source: OverlaySourc
   const params: Record<TSlug, string[]>[] = [];
   const seen = new Set<string>();
 
+  // The scope is part of every URL of a scoped documentation, so it is part of every param.
+  const scope = source.scope === undefined ? [] : [source.scope];
+
   for (const info of source.versions) {
     // The version served at the base URL is addressed without its segment.
-    const prefix = info.isRoot ? [] : [info.segment];
+    const prefix = info.isRoot ? [...scope] : [...scope, info.segment];
 
     for (const entry of source.overlay.getEntries(info.id)) {
       if (!wanted.has(entry.kind)) continue;

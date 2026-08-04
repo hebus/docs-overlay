@@ -21,13 +21,24 @@ export function reSegment(path: SourcePath, segment: string): SourcePath {
 }
 
 /**
- * Slugs a page is served at, version segment first. Set explicitly rather than left to
- * `slugsPlugin`: if the host uses `slugs` or `slugsFromData`, deriving them from the original
- * frontmatter would produce the *same* slug for every version and `slugsPlugin` throws
+ * Version segment prefixed by the scope, for a **path**: `("atomic", "2.0.0")` → `"atomic/2.0.0"`.
+ *
+ * A slash belongs in a path — it is a file key, and this is what keeps two documentations from
+ * writing the same `2.0.0/meta.json` into one loader. It must never reach `slugs`, where a segment
+ * containing a slash would be percent-encoded by the router; use {@link withSegment} there.
+ */
+export function scopedSegment(scope: string | undefined, segment: string): string {
+  return scope === undefined || scope === "" ? segment : `${scope}/${segment}`;
+}
+
+/**
+ * Slugs a page is served at: the scope when there is one, then the version segment. Set explicitly
+ * rather than left to `slugsPlugin`: if the host uses `slugs` or `slugsFromData`, deriving them from
+ * the original frontmatter would produce the *same* slug for every version and `slugsPlugin` throws
  * `Duplicated slugs`.
  */
-export function withSegment(segment: string, slug: Slug): string[] {
-  return [segment, ...slug];
+export function withSegment(segment: string, slug: Slug, scope?: string | undefined): string[] {
+  return scope === undefined || scope === "" ? [segment, ...slug] : [scope, segment, ...slug];
 }
 
 /** Drops the version segment from route slugs. */

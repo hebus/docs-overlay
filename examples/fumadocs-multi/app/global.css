@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* npm hoists fumadocs-ui to the monorepo root, so point Tailwind's scanner there. */
+@source "../../../node_modules/fumadocs-ui/dist/**/*.js";

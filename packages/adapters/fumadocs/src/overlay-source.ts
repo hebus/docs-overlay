@@ -16,6 +16,16 @@ export interface OverlayFumadocsOptions<S extends StaticSource = StaticSource> {
   readonly source: S | (() => S);
   /** Must match the `baseUrl` given to `loader()`. Defaults to `/docs`. */
   readonly baseUrl?: string | undefined;
+  /**
+   * Documentation this instance serves, when a site serves several — one product per scope, each
+   * with its own versions. Leave it out and nothing changes: a single-product site never sees it.
+   *
+   * The scope is the first URL segment after `baseUrl` (`/docs/atomic-angular/2.0.0/…`) and the
+   * folder holding the version folders (`content/docs/atomic-angular/2.0.0/…`). Several scoped
+   * instances can feed **one** `loader()`, which is what keeps a single page tree, a single search
+   * index, and relative links that still resolve.
+   */
+  readonly scope?: string | undefined;
   /** Folder names that are not version numbers, typically `["next"]`. */
   readonly channels?: readonly string[] | undefined;
   /** Per-version `inheritsFrom` and opaque `meta` — how a maintenance branch is declared. */
@@ -64,6 +74,8 @@ export interface OverlaySource<S extends StaticSource = StaticSource> {
   /** The version served at the base URL, when `latestAtRoot` is on. */
   readonly root: VersionInfo | undefined;
   readonly baseUrl: string;
+  /** The documentation this instance serves, or `undefined` on a single-product site. */
+  readonly scope: string | undefined;
   /** The {@link OverlayFumadocsOptions.inheritedNotice} choice, for the rendering layer to honour. */
   readonly inheritedNotice: boolean;
   readonly diagnostics: readonly Diagnostic[];
@@ -96,11 +108,17 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
     options.onDiagnostic?.(diagnostic);
   };
 
+  // Trailing and leading slashes would double up in every path and URL built from it.
+  const scope = normaliseScope(options.scope);
+
   const read = typeof options.source === "function" ? options.source : () => options.source as S;
   const overlay = createOverlay<FumadocsMeta>({
     // A live content source rather than a snapshot: handing the engine an already-materialised array
     // would make `invalidate()` compare the content against itself and never notice a change.
-    source: { id: "fumadocs", entries: () => fromFumadocsSource(read()) },
+    //
+    // `baseDir` strips the scope back off, so the version is the first path segment again — which is
+    // the one thing the core insists on.
+    source: { id: "fumadocs", entries: () => fromFumadocsSource(read(), { baseDir: scope }) },
     channels: options.channels,
     versions: options.versions,
     onDiagnostic
@@ -111,7 +129,9 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
   // before the first release, where the newest version is a channel and `latest` is undefined.
   const rootId = options.latestAtRoot === true ? (latestId ?? overlay.versions.at(-1)?.id) : undefined;
 
-  const infos = overlay.versions.map(version => toVersionInfo(version, { baseUrl, segmentOf, labels: options.labels, latestId, rootId }));
+  // A version's landing page lives under its own documentation: `/docs/atomic-angular/1.0.0`.
+  const scopedBaseUrl = scope === undefined ? baseUrl : `${baseUrl}/${scope}`;
+  const infos = overlay.versions.map(version => toVersionInfo(version, { baseUrl: scopedBaseUrl, segmentOf, labels: options.labels, latestId, rootId }));
 
   const byId = new Map(infos.map(info => [info.id, info]));
   const bySegment = new Map(infos.map(info => [info.segment, info]));
@@ -124,13 +144,15 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
     versions: infos,
     mergeMeta: options.mergeMeta ?? appendRest({ onDiagnostic }),
     rootPerVersion: options.rootPerVersion,
-    orderVersions: options.orderVersions
+    orderVersions: options.orderVersions,
+    scope
   });
 
   const source = toFumadocsSourceAll(overlay, {
     versionSegment: segmentOf,
     includeMetas: false,
-    extraFiles: metaFiles
+    extraFiles: metaFiles,
+    scope
   }) as S;
 
   return {
@@ -140,13 +162,19 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
     latest: latestId === undefined ? undefined : byId.get(latestId),
     root: rootId === undefined ? undefined : byId.get(rootId),
     baseUrl,
+    scope,
     inheritedNotice: options.inheritedNotice !== false,
     diagnostics,
     report: onDiagnostic,
     url: slugs => {
-      // The slugs always carry the version; only the URL may drop it.
-      const rest = rootSegment !== undefined && slugs[0] === rootSegment ? slugs.slice(1) : slugs;
-      return rest.length === 0 ? baseUrl : `${baseUrl}/${rest.join("/")}`;
+      // The scope comes first in the slugs and always stays in the URL; the version comes next and
+      // is the only part the URL may drop.
+      const prefix = scope === undefined ? [] : slugs.slice(0, 1);
+      const versioned = scope === undefined ? slugs : slugs.slice(1);
+      const rest = rootSegment !== undefined && versioned[0] === rootSegment ? versioned.slice(1) : versioned;
+
+      const segments = [...prefix, ...rest];
+      return segments.length === 0 ? baseUrl : `${baseUrl}/${segments.join("/")}`;
     },
     versionOf: id => byId.get(id),
     versionOfSegment: segment => bySegment.get(segment)
@@ -156,4 +184,11 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
 function normaliseBaseUrl(baseUrl: string): string {
   const trimmed = baseUrl.replace(/\/+$/, "");
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+/** A scope is a bare segment: no slashes to double up in the paths and URLs built from it. */
+function normaliseScope(scope: string | undefined): string | undefined {
+  if (scope === undefined) return undefined;
+  const trimmed = scope.replace(/^\/+/, "").replace(/\/+$/, "");
+  return trimmed === "" ? undefined : trimmed;
 }

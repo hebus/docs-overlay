@@ -1,6 +1,7 @@
 import type { ResolvedPage, VersionId } from "docs-overlay";
 
 import type { OverlaySource } from "./overlay-source.js";
+import { withSegment } from "./paths.js";
 
 /**
  * Where a page's content comes from, when it is not this version's own file.
@@ -44,9 +45,17 @@ export type RouteResolution =
  * The version is the first segment. With `latestAtRoot`, a first segment that is not a known version
  * means the request is for the newest release, whose segment is implicit in the URL but still present
  * in the slugs the loader knows.
+ *
+ * On a **scoped** source the documentation comes first and the version one segment later. A request
+ * for another scope is `not-found` rather than a page of this one's root version: the fallback above
+ * exists for a missing *version* segment, and applying it to a sibling's URL would answer 404 while
+ * claiming to have looked in the right place.
  */
 export function resolveRoute(source: OverlaySource, segments: readonly string[] | undefined): RouteResolution {
-  const requested = segments ?? [];
+  const incoming = segments ?? [];
+  if (source.scope !== undefined && incoming[0] !== source.scope) return { kind: "not-found" };
+
+  const requested = source.scope === undefined ? incoming : incoming.slice(1);
   const fromSegment = requested.length === 0 ? undefined : source.versionOfSegment(requested[0] ?? "");
 
   const version = fromSegment ?? source.root;
@@ -54,11 +63,12 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
 
   const rest = fromSegment === undefined ? requested : requested.slice(1);
   const result = source.overlay.resolve(version.id, rest);
+  const slugsOf = (slug: readonly string[]): string[] => withSegment(version.segment, slug, source.scope);
 
   switch (result.kind) {
     case "own":
     case "inherited":
-      return { kind: "page", version: version.id, slugs: [version.segment, ...rest], ...inheritedFrom(result.page) };
+      return { kind: "page", version: version.id, slugs: slugsOf(rest), ...inheritedFrom(result.page) };
 
     case "alias":
       // Served, but the canonical link must point at the page's real slug. An alias can point at an
@@ -66,13 +76,13 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
       return {
         kind: "page",
         version: version.id,
-        slugs: [version.segment, ...result.page.slug],
-        canonicalUrl: source.url([version.segment, ...result.canonical]),
+        slugs: slugsOf(result.page.slug),
+        canonicalUrl: source.url(slugsOf(result.canonical)),
         ...inheritedFrom(result.page)
       };
 
     case "redirect":
-      return { kind: "redirect", to: source.url([version.segment, ...result.to]), permanent: result.permanent };
+      return { kind: "redirect", to: source.url(slugsOf(result.to)), permanent: result.permanent };
 
     case "deleted":
       return {
@@ -80,7 +90,7 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
         version: version.id,
         deletedIn: result.deletedIn,
         ...(result.lastAvailable === undefined ? {} : { lastAvailableUrl: lastAvailableUrl(source, result.lastAvailable.version, result.lastAvailable.slug) }),
-        ...(result.replacedBy === undefined ? {} : { replacedByUrl: source.url([version.segment, ...result.replacedBy]) })
+        ...(result.replacedBy === undefined ? {} : { replacedByUrl: source.url(slugsOf(result.replacedBy)) })
       };
 
     case "missing":
@@ -96,7 +106,7 @@ function inheritedFrom(page: ResolvedPage): { inheritedFrom?: InheritedFrom } {
 
 function lastAvailableUrl(source: OverlaySource, version: VersionId, slug: readonly string[]): string | undefined {
   const info = source.versionOf(version);
-  return info === undefined ? undefined : source.url([info.segment, ...slug]);
+  return info === undefined ? undefined : source.url(withSegment(info.segment, slug, source.scope));
 }
 
 export interface VersionSwitch {
@@ -118,14 +128,19 @@ export function switchVersion(source: OverlaySource, segments: readonly string[]
   if (target === undefined) return { slugs: [], url: source.baseUrl, exact: false };
 
   const current = resolveRoute(source, segments);
-  const slug = current.kind === "page" ? current.slugs.slice(1) : [];
+  // Drop the scope as well as the version segment: what is left is the page inside its documentation.
+  const carried = source.scope === undefined ? 1 : 2;
+  const slug = current.kind === "page" ? current.slugs.slice(carried) : [];
+
+  const landing = withSegment(target.segment, [], source.scope);
 
   // Landing page to landing page is an exact match, not a fallback.
-  if (slug.length === 0) return { slugs: [target.segment], url: target.url, exact: true };
+  if (slug.length === 0) return { slugs: landing, url: target.url, exact: true };
 
   const resolved = source.overlay.resolve(to, slug);
   const exists = resolved.kind === "own" || resolved.kind === "inherited" || resolved.kind === "alias";
-  if (!exists) return { slugs: [target.segment], url: target.url, exact: false };
+  if (!exists) return { slugs: landing, url: target.url, exact: false };
 
-  return { slugs: [target.segment, ...slug], url: source.url([target.segment, ...slug]), exact: true };
+  const slugs = withSegment(target.segment, slug, source.scope);
+  return { slugs, url: source.url(slugs), exact: true };
 }

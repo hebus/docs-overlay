@@ -31,8 +31,9 @@ jobs:
 
   sites:
     # Separate job so a Next or MDX failure reads as such, instead of looking like a library failure.
-    # The example's `postbuild` asserts the exported HTML, which is the end-to-end test of the product;
-    # the docs site is built because it is the only consumer of the packages' published `exports`.
+    # Each example's `postbuild` asserts the exported HTML, which is the end-to-end test of the
+    # product — one for a single documentation, one for several side by side; the docs site is built
+    # because it is the only consumer of the packages' published `exports`.
     needs: verify
     runs-on: ubuntu-latest
     steps:
@@ -44,4 +45,5 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run build:example
+      - run: npm run build:example:multi
       - run: npm run build:docs
