@@ -81,12 +81,43 @@ the shape it always had. `hops` comes along for a consumer that wants to treat o
 differently from five.
 
 Do not link to the defining version. It serves the very same file, so the link leads to identical
-prose — the reader gains nothing and loses their place. If a project would rather say nothing at all,
-`overlaySource({ inheritedNotice: false })` records that; it changes what is shown, never what
-`resolve()` reports, so a consumer keeps every other option open.
+prose — the reader gains nothing and loses their place.
 
 You are reading this on `next`, which is the only version whose folder holds this page — so it is the
 one page here with no notice at the top. The five around it have one.
+
+### Turning the notice off
+
+Some projects will not want it. `inheritedNotice` is how they say so — but it is a **shared switch,
+not a feature toggle**: the adapter renders nothing, so it cannot hide anything on its own. Two halves,
+both yours to write.
+
+Declare the choice once, where the source is built:
+
+```ts
+// lib/source.ts
+export const overlay = overlaySource({
+  source: docs.toFumadocsSource(),
+  channels: ["next"],
+  inheritedNotice: false // defaults to true
+});
+```
+
+Then honour it where the page is rendered:
+
+```tsx
+// app/docs/[[...slug]]/page.tsx
+{overlay.inheritedNotice && route.inheritedFrom !== undefined ? (
+  <Callout>Unchanged since {route.inheritedFrom.version}</Callout>
+) : null}
+```
+
+Write only the first half and nothing happens: the notice keeps appearing, with nothing to explain
+why. What the flag buys over a constant of your own is that a single declaration answers the question
+for every route, and for whatever else comes to ask.
+
+Switching it off does not change what `resolve()` reports — `inheritedFrom` is still there. A fact
+withheld is a fact you can no longer count, log, or show only past a number of `hops`.
 
 ## Truth table
 

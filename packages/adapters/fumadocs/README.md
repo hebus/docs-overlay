@@ -62,12 +62,47 @@ nothing in the page says which version wrote it. A `page` resolution therefore c
 does, so `if (route.inheritedFrom)` is the whole test.
 
 ```tsx
+// app/docs/[[...slug]]/page.tsx
 {route.inheritedFrom === undefined ? null : <p>Unchanged since {route.inheritedFrom.version}</p>}
 ```
 
-Linking to that version is usually pointless: it serves the very same file. Set
-`inheritedNotice: false` on `overlaySource()` if a project would rather say nothing — it records the
-choice for your rendering layer to read, and never changes what `resolveRoute()` reports.
+Do not link to that version: it serves the very same file, so the link returns identical prose and
+costs the reader their place.
+
+### Turning the notice off
+
+`inheritedNotice` is a **shared switch, not a feature toggle.** This package renders nothing, so it
+cannot hide anything by itself. It has two halves, and both are yours to write.
+
+**1. Declare the choice** where you build the source:
+
+```ts
+// lib/source.ts
+export const overlay = overlaySource({
+  source: docs.toFumadocsSource(),
+  channels: ["next"],
+  inheritedNotice: false // defaults to true
+});
+```
+
+**2. Honour it** where you render:
+
+```tsx
+// app/docs/[[...slug]]/page.tsx
+{overlay.inheritedNotice && route.inheritedFrom !== undefined ? (
+  <p>Unchanged since {route.inheritedFrom.version}</p>
+) : null}
+```
+
+> [!IMPORTANT]
+> Write only the first half and the option does nothing: your page goes on rendering the notice
+> whatever the value, with nothing to explain why. The reason to put the flag here rather than in a
+> constant of your own is that one declaration then answers the question for every route — and for
+> anything else that comes to ask, such as a second layout or a print stylesheet.
+
+Turning it off never changes what `resolveRoute()` reports: `inheritedFrom` is still there. Withholding
+the fact would leave you unable to do anything else with it — count it, log it, or show it only past a
+number of `hops`.
 
 ## Two things that will bite otherwise
 
