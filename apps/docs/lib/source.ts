@@ -6,9 +6,12 @@ import { findOrphanPages, overlaySource } from "docs-overlay-fumadocs";
 /**
  * This site is documented with the library it documents.
  *
- * `content/docs/0.1.0/` holds every page; `content/docs/next/` is empty and inherits all of them.
- * `latestAtRoot` keeps the release at `/docs/authoring` and puts the channel at
- * `/docs/next/authoring`, so cutting 0.1.0 broke no link and needed no change here.
+ * The oldest version folder holds every page; each newer one holds only what it rewrote, and
+ * `content/docs/next/` holds whatever an unreleased change has touched — often nothing.
+ *
+ * `latestAtRoot` keeps the newest release at `/docs/authoring` and puts the channel at
+ * `/docs/next/authoring`, so cutting a version breaks no link and needs no change here. The cut
+ * itself is done by `scripts/cut-docs.mjs` when the engine's version is bumped.
  */
 export const overlay = overlaySource({
   source: docs.toFumadocsSource(),

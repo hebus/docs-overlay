@@ -147,6 +147,13 @@ Changesets accumulate on `main`, and the `release-pr` workflow keeps a
 "chore: version packages" pull request up to date. Merging it bumps the versions and writes the
 changelogs.
 
+**That pull request also cuts the documentation.** `changeset:version` runs `scripts/cut-docs.mjs`,
+which turns `apps/docs/content/docs/next/` into a folder named after the engine's new version and
+empties the channel — as renames, so the content diff is zero bytes. Nothing to do by hand, and the
+result is reviewed in the pull request along with the bump. It cuts nothing when the engine's version is
+unchanged, which is the normal case for a release of the adapter alone; it says which of the two
+happened.
+
 Publishing is then done **locally**, so the tarball that reaches npmjs is the one verified on a real
 machine and no long-lived npm token has to live in CI:
 
@@ -154,10 +161,11 @@ machine and no long-lived npm token has to live in CI:
 npm run release
 ```
 
-It refuses a dirty tree **and** a `HEAD` that did not introduce the version — so what reaches npm is
-always the tree the changelog describes. Beyond that it skips any version already on npmjs, re-runs the
-packaging and independence checks before publishing, and pushes one git tag per package. Running it
-twice is harmless; `npm run release:dry` runs every check and publishes nothing.
+It refuses a dirty tree, and refuses to publish a package whose own files changed after its version was
+set — so what reaches npm is always the tree its changelog describes. Beyond that it skips any version
+already on npmjs, re-runs the packaging and independence checks before publishing, and pushes one git
+tag per package. Running it twice is harmless; `npm run release:dry` runs every check and publishes
+nothing.
 
 Every change to a published package needs a changeset (`npx changeset`, or write
 `.changeset/<name>.md` by hand); the `changeset-check` workflow blocks the PR otherwise. Put
@@ -175,10 +183,10 @@ Every change to a published package needs a changeset (`npx changeset`, or write
 | [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/)                         | What the engine gives you, and what breaks a site quietly    |
 | [Migrating from Docusaurus](https://hebus.github.io/docs-overlay/docs/migrating-from-docusaurus/) | Folder mapping, steps, honest payoff                         |
 
-The pages live in [`apps/docs/content/docs/`](apps/docs/content/docs) — `0.1.0/` holds all of them, and
-`next/` holds only the one an unreleased change rewrote, inheriting the rest and saying so on each of
-them. Cutting `0.1.0` was `git mv next 0.1.0 && mkdir next`, which git recorded as seven renames and
-nothing else.
+The pages live in [`apps/docs/content/docs/`](apps/docs/content/docs) — the oldest version folder holds
+all of them, `next/` holds only what an unreleased change rewrote, and every inherited page says which
+version wrote it. Cutting a version is a `git mv` that git records as renames and nothing else, so the
+content diff is empty; `scripts/cut-docs.mjs` does it during the version pull request.
 
 [`examples/fumadocs-next`](examples/fumadocs-next) is a working site with five versions covering
 override, rename, tombstone, re-add, alias and navigation inheritance. Its `postbuild` asserts the

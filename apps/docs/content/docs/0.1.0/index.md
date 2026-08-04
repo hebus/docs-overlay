@@ -9,7 +9,7 @@ changed — an override, a new page, a rename, or a tombstone. Everything else i
 Cutting a release becomes:
 
 ```bash
-git mv content/docs/next content/docs/0.2.0 && mkdir content/docs/next
+git mv content/docs/next content/docs/5.0.0 && mkdir content/docs/next
 ```
 
 Git records that as renames, so the content diff is **zero bytes**, and the emptied channel inherits
@@ -17,14 +17,13 @@ everything again.
 
 ## This site is its own proof
 
-You are reading documentation served by docs-overlay. Two versions exist: `0.1.0`, the release, and
-`next`, where unreleased changes go. Switch between them in the sidebar.
+You are reading documentation served by docs-overlay. The releases and the `next` channel are listed in
+the sidebar; switch between them there.
 
-`next/` holds **one file** — the Resolution page, because that is the only thing an unreleased change
-has altered. Every other page `next` serves is the `0.1.0` file of the same name, this one included,
-and carries a notice naming the version that wrote it. Write the diff, inherit the rest: the whole
-model fits in a folder you can list. And `/docs/authoring` still points at the release, so cutting a
-version broke no link.
+`next/` holds only the pages an unreleased change has rewritten — often none at all. Every other page
+it serves is the release's file of the same name, this one included, and carries a notice naming the
+version that wrote it. Write the diff, inherit the rest: the whole model fits in a folder you can list.
+And `/docs/authoring` keeps pointing at the newest release, so cutting a version breaks no link.
 
 ## Packages
 
