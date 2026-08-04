@@ -75,4 +75,4 @@ interface DocumentationSource<M = unknown> {
 ```
 
 `Overlay` extends it with resolution, metadata, redirects, the dependency graph and invalidation. See
-[adapters.md](adapters.md).
+[Writing an adapter](./adapters.md).

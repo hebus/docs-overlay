@@ -35,7 +35,7 @@ current one, `/11.13.0/...` for an older one. Nothing that was linked externally
    export const docs = defineDocs({ dir: "content/docs", docs: { schema: withOverlay(pageSchema) } });
    ```
 
-3. **Wire the loader** — see the [README](../README.md#fumadocs-usage).
+3. **Wire the loader** — see [Install](./index.md#install).
 
 4. **Prune what is identical.** Any file in an older version byte-identical to the one it would inherit
    can be deleted; the overlay serves the inherited copy. On the tree this was built for, 43 of 188
