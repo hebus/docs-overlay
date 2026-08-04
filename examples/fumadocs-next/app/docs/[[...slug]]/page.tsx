@@ -75,6 +75,14 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
             </>
           )}
         </p>
+        {/* The same fact `absolutePath` shows as a file path, but as the resolver reports it. */}
+        {overlay.inheritedNotice && route.inheritedFrom !== undefined ? (
+          // One template string: React would otherwise split the sentence with an HTML comment, and
+          // `assert-output.mjs` reads this page as text.
+          <p data-testid="inherited-notice">
+            {`Unchanged since ${overlay.versionOf(route.inheritedFrom.version)?.label ?? route.inheritedFrom.version} (${route.inheritedFrom.hops} hop${route.inheritedFrom.hops === 1 ? "" : "s"})`}
+          </p>
+        ) : null}
         <MDX />
       </DocsBody>
     </DocsPage>
