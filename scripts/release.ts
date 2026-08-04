@@ -54,14 +54,29 @@ function manifest(directory: string): Manifest {
   return JSON.parse(readFileSync(join(directory, "package.json"), "utf-8")) as Manifest;
 }
 
+/**
+ * Asks the registry through a shell, because npm is a `.cmd` on Windows and `execFileSync` refuses to
+ * run one — `EINVAL` ever since Node's fix for CVE-2024-27980. The arguments are constants from
+ * {@link PACKAGES}, never input, so building a command line is safe here.
+ */
+function captureNpm(args: readonly string[]): string {
+  return execSync(`npm ${args.join(" ")}`, { cwd: process.cwd(), stdio: ["ignore", "pipe", "pipe"] })
+    .toString()
+    .trim();
+}
+
 function publishedVersions(name: string): string[] {
   try {
     // `npm view versions --json` yields an array, except when a single version exists, where it yields
     // a bare string.
-    const parsed = JSON.parse(capture("npm", ["view", name, "versions", "--json", "--registry", REGISTRY])) as string[] | string;
+    const parsed = JSON.parse(captureNpm(["view", name, "versions", "--json", "--registry", REGISTRY])) as string[] | string;
     return Array.isArray(parsed) ? parsed : [parsed];
-  } catch {
-    return []; // never published
+  } catch (error) {
+    // Never published is the one failure that means "nothing on npmjs yet". Reading any other one that
+    // way — no network, a registry hiccup — would make the script try to republish a version that
+    // exists, and npm would refuse in the middle of a release, after the first package went out.
+    if (String((error as { stderr?: unknown }).stderr).includes("E404")) return [];
+    throw new Error(`could not ask npmjs which versions of ${name} exist — refusing to guess.\n${String((error as { stderr?: unknown }).stderr ?? error)}`);
   }
 }
 
