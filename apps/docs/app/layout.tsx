@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { versionTabs } from "docs-overlay-fumadocs";
@@ -12,6 +13,15 @@ import "./global.css";
 const basePath = process.env.BASE_PATH ?? "";
 
 const tabs = versionTabs(overlay);
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://hebus.github.io/docs-overlay"),
+  title: { default: "docs-overlay — write the diff, not the docs", template: "%s — docs-overlay" },
+  description:
+    "Versioned documentation where each version folder holds only what changed. The oldest folder is the complete tree; everything after it is an overlay. Fumadocs adapter included.",
+  applicationName: "docs-overlay",
+  keywords: ["documentation", "versioning", "fumadocs", "nextjs", "overlay", "docs"]
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

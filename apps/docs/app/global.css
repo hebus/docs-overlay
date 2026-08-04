@@ -4,3 +4,66 @@
 
 /* npm hoists fumadocs-ui to the monorepo root, so point Tailwind's scanner there. */
 @source "../../../node_modules/fumadocs-ui/dist/**/*.js";
+
+/*
+ * The neutral Fumadocs theme is pure grayscale. The landing page — and nothing else — adds one
+ * accent pair, kept as plain custom properties so the value can differ between light and dark.
+ */
+:root {
+  --do-accent: oklch(0.55 0.21 279);
+  --do-accent-2: oklch(0.62 0.13 205);
+}
+
+.dark {
+  --do-accent: oklch(0.74 0.17 279);
+  --do-accent-2: oklch(0.8 0.12 205);
+}
+
+/* `inline` is what lets the utility resolve the variable at use time, so `dark` still applies. */
+@theme inline {
+  --color-do-accent: var(--do-accent);
+  --color-do-accent-2: var(--do-accent-2);
+}
+
+/* Blueprint grid, faded out towards the edges so it never fights with the text on top of it. */
+.do-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-fd-border) 70%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-fd-border) 70%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 75%);
+}
+
+/* Two accent halos behind the hero. Pointer-events are off; this is decoration only. */
+.do-glow::before,
+.do-glow::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  border-radius: 9999px;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.do-glow::before {
+  inset-block-start: -12rem;
+  inset-inline-start: -8rem;
+  width: 34rem;
+  height: 26rem;
+  background: color-mix(in oklab, var(--do-accent) 22%, transparent);
+}
+
+.do-glow::after {
+  inset-block-start: -6rem;
+  inset-inline-end: -10rem;
+  width: 30rem;
+  height: 24rem;
+  background: color-mix(in oklab, var(--do-accent-2) 20%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .do-glow::before,
+  .do-glow::after {
+    filter: blur(70px);
+  }
+}
