@@ -58,7 +58,11 @@ function anchored(file, fragment) {
 function fault(href, from) {
   if (IGNORED.test(href)) return undefined;
 
-  const [raw, fragment] = href.split("#");
+  const [beforeFragment, fragment] = href.split("#");
+
+  // Next cache-busts metadata assets with a query (`/icon.svg?icon.<hash>.svg`). The query is not
+  // part of the exported path, so it has to come off before the file is looked up.
+  const raw = beforeFragment.split("?")[0];
 
   if (raw === "") {
     if (!fragment) return undefined; // `#` alone is a control, not a destination.
