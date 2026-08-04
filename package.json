@@ -2,7 +2,7 @@
   "name": "docs-overlay",
   "private": true,
   "type": "module",
-  "description": "Versioned documentation with overlay inheritance \u2014 framework-agnostic core plus framework adapters.",
+  "description": "Versioned documentation with overlay inheritance — framework-agnostic core plus framework adapters.",
   "license": "MIT",
   "packageManager": "npm@11.3.0",
   "engines": {
@@ -31,6 +31,7 @@
     "release": "tsx scripts/release.ts",
     "prepare": "husky",
     "build:example": "npm run build -w docs-overlay-example",
+    "build:example:multi": "npm run build -w docs-overlay-example-multi",
     "build:docs": "npm run build -w docs-overlay-site",
     "release:dry": "tsx scripts/release.ts --dry-run"
   },
