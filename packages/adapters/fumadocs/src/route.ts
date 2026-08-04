@@ -1,10 +1,31 @@
-import type { VersionId } from "docs-overlay";
+import type { ResolvedPage, VersionId } from "docs-overlay";
 
 import type { OverlaySource } from "./overlay-source.js";
 
+/**
+ * Where a page's content comes from, when it is not this version's own file.
+ *
+ * A reader browsing a version that never touched a page is reading an older version's file, and
+ * nothing in the URL says so. This is what lets an adapter tell them.
+ */
+export interface InheritedFrom {
+  readonly version: VersionId;
+  /** Inheritance hops from the browsing version. `1` is the version immediately before it. */
+  readonly hops: number;
+}
+
 export type RouteResolution =
-  /** Serve the page. `canonicalUrl` is set when the request came in through an alias. */
-  | { readonly kind: "page"; readonly version: VersionId; readonly slugs: string[]; readonly canonicalUrl?: string | undefined }
+  /**
+   * Serve the page. `canonicalUrl` is set when the request came in through an alias;
+   * `inheritedFrom` when the browsing version does not own the file.
+   */
+  | {
+      readonly kind: "page";
+      readonly version: VersionId;
+      readonly slugs: string[];
+      readonly canonicalUrl?: string | undefined;
+      readonly inheritedFrom?: InheritedFrom | undefined;
+    }
   /** Do not serve; send the reader to `to`. */
   | { readonly kind: "redirect"; readonly to: string; readonly permanent: boolean }
   /** The page existed and was removed. Enough context to explain instead of 404ing. */
@@ -37,15 +58,17 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
   switch (result.kind) {
     case "own":
     case "inherited":
-      return { kind: "page", version: version.id, slugs: [version.segment, ...rest] };
+      return { kind: "page", version: version.id, slugs: [version.segment, ...rest], ...inheritedFrom(result.page) };
 
     case "alias":
-      // Served, but the canonical link must point at the page's real slug.
+      // Served, but the canonical link must point at the page's real slug. An alias can point at an
+      // inherited page, and a reader has the same question about it.
       return {
         kind: "page",
         version: version.id,
         slugs: [version.segment, ...result.page.slug],
-        canonicalUrl: source.url([version.segment, ...result.canonical])
+        canonicalUrl: source.url([version.segment, ...result.canonical]),
+        ...inheritedFrom(result.page)
       };
 
     case "redirect":
@@ -64,6 +87,11 @@ export function resolveRoute(source: OverlaySource, segments: readonly string[] 
     case "unknown-version":
       return { kind: "not-found" };
   }
+}
+
+/** Nothing at all when the browsing version owns the file, so an `own` page keeps the shape it had. */
+function inheritedFrom(page: ResolvedPage): { inheritedFrom?: InheritedFrom } {
+  return page.inherited ? { inheritedFrom: { version: page.source.definedIn, hops: page.hops } } : {};
 }
 
 function lastAvailableUrl(source: OverlaySource, version: VersionId, slug: readonly string[]): string | undefined {

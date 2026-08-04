@@ -39,20 +39,35 @@ inside the version it was written in.
 
 ## API
 
-| Export                                   | Purpose                                                                                                   |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `overlaySource(options)`                 | The projection: `source` for `loader()`, `url` for its URLs, `versions`, `latest`, `root`, `diagnostics`. |
-| `resolveRoute(overlay, slugs)`           | What the catch-all route should do: `page`, `redirect`, `gone` or `not-found`.                            |
-| `staticParams(overlay)`                  | Every routable slug in the URL shape — pages, aliases, old slugs, removed pages.                          |
-| `switchVersion(overlay, slugs, to)`      | Where the version switcher should go, with `exact: false` when the page does not exist there.             |
-| `versionTabs(overlay)`                   | Data for a switcher, built explicitly rather than auto-detected.                                          |
-| `versionTree(source, segment)`           | The sidebar tree scoped to one version.                                                                   |
-| `findOrphanPages(source)`                | Pages that are routed but that no tree reaches.                                                           |
-| `versionTagOf(page)`                     | Version segment of a page, for tagging a search index.                                                    |
-| `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                                   |
-| `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                                   |
-| `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                                           |
-| `withOverlay(schema)`                    | From `docs-overlay-fumadocs/schema`. Mandatory — see above.                                               |
+| Export                                   | Purpose                                                                                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `overlaySource(options)`                 | The projection: `source` for `loader()`, `url` for its URLs, `versions`, `latest`, `root`, `diagnostics`.                                               |
+| `resolveRoute(overlay, slugs)`           | What the catch-all route should do: `page`, `redirect`, `gone` or `not-found`. A `page` carries `inheritedFrom` when the version does not own the file. |
+| `staticParams(overlay)`                  | Every routable slug in the URL shape — pages, aliases, old slugs, removed pages.                                                                        |
+| `switchVersion(overlay, slugs, to)`      | Where the version switcher should go, with `exact: false` when the page does not exist there.                                                           |
+| `versionTabs(overlay)`                   | Data for a switcher, built explicitly rather than auto-detected.                                                                                        |
+| `versionTree(source, segment)`           | The sidebar tree scoped to one version.                                                                                                                 |
+| `findOrphanPages(source)`                | Pages that are routed but that no tree reaches.                                                                                                         |
+| `versionTagOf(page)`                     | Version segment of a page, for tagging a search index.                                                                                                  |
+| `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                                                                                 |
+| `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                                                                                 |
+| `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                                                                                         |
+| `withOverlay(schema)`                    | From `docs-overlay-fumadocs/schema`. Mandatory — see above.                                                                                             |
+
+## Telling readers a page is inherited
+
+Inheritance is invisible by default: `/docs/next/guide/a` and `/docs/guide/a` render the same file, and
+nothing in the page says which version wrote it. A `page` resolution therefore carries
+`inheritedFrom: { version, hops }` whenever the browsing version does not own the file — absent when it
+does, so `if (route.inheritedFrom)` is the whole test.
+
+```tsx
+{route.inheritedFrom === undefined ? null : <p>Unchanged since {route.inheritedFrom.version}</p>}
+```
+
+Linking to that version is usually pointless: it serves the very same file. Set
+`inheritedNotice: false` on `overlaySource()` if a project would rather say nothing — it records the
+choice for your rendering layer to read, and never changes what `resolveRoute()` reports.
 
 ## Two things that will bite otherwise
 
