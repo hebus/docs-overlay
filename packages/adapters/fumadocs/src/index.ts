@@ -26,6 +26,6 @@ export { slugsOfKind, staticParams } from "./params.js";
 export type { NextRedirect } from "./redirects.js";
 export { redirectParams, toNetlifyRedirects, toNextRedirects } from "./redirects.js";
 export type { FumadocsMeta, ToFumadocsSourceOptions } from "./reproject.js";
-export type { RouteResolution, VersionSwitch } from "./route.js";
+export type { InheritedFrom, RouteResolution, VersionSwitch } from "./route.js";
 export { resolveRoute, switchVersion } from "./route.js";
 export { fromFumadocsSource, toFumadocsSource, toFumadocsSourceAll } from "./reproject.js";

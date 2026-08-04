@@ -27,6 +27,10 @@ check("1.0.0/guide/intro still shows the 1.0.0 text", html("/docs/1.0.0/guide/in
 
 // 2. A page never overridden is served by every version from one source file.
 check("4.0.0 inherits guide/setup from 1.0.0", html("/docs/guide/setup").includes("content/docs/1.0.0/guide/setup.md"));
+// …and the resolver says so in prose, not just through a file path.
+check("4.0.0/guide/setup tells the reader where it comes from", html("/docs/guide/setup").includes("Unchanged since 1.0.0"));
+// The negative matters more: a notice shown unconditionally would satisfy the assertion above.
+check("1.0.0/guide/setup claims no inheritance, since it owns the file", !html("/docs/1.0.0/guide/setup").includes("Unchanged since"));
 
 // 3. Tombstone: present in 2.0.0, removed in 3.0.0, back in 4.0.0.
 check("2.0.0/guide/stays exists", exists("/docs/2.0.0/guide/stays"));

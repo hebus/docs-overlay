@@ -20,7 +20,41 @@ const build = (options: Partial<OverlayFumadocsOptions> = {}) => overlaySource({
 
 describe("resolveRoute", () => {
   it("serves a page under an explicit version segment", () => {
-    expect(resolveRoute(build(), ["3.0.0", "guide", "intro"])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0", "guide", "intro"] });
+    // `guide/intro` only ever existed in 1.0.0, so 3.0.0 serves it across two hops and says so.
+    expect(resolveRoute(build(), ["3.0.0", "guide", "intro"])).toEqual({
+      kind: "page",
+      version: "3.0.0",
+      slugs: ["3.0.0", "guide", "intro"],
+      inheritedFrom: { version: "1.0.0", hops: 2 }
+    });
+  });
+
+  it("says nothing about inheritance when the version owns the file", () => {
+    // The absence is the API: a reader on 1.0.0 is reading 1.0.0's own file and needs no notice.
+    const result = resolveRoute(build(), ["1.0.0", "guide", "intro"]);
+
+    expect(result.kind).toBe("page");
+    expect(result).not.toHaveProperty("inheritedFrom");
+  });
+
+  it("counts one hop to the version immediately before", () => {
+    expect(resolveRoute(build(), ["3.0.0", "guide", "new-api"])).toEqual({
+      kind: "page",
+      version: "3.0.0",
+      slugs: ["3.0.0", "guide", "new-api"],
+      inheritedFrom: { version: "2.0.0", hops: 1 }
+    });
+  });
+
+  it("reports inheritance through an alias too", () => {
+    // The alias is declared in 3.0.0 on 3.0.0's own file, so `next` serves both by inheritance.
+    expect(resolveRoute(build(), ["next", "api-reference"])).toEqual({
+      kind: "page",
+      version: "next",
+      slugs: ["next", "api"],
+      canonicalUrl: "/docs/next/api",
+      inheritedFrom: { version: "3.0.0", hops: 1 }
+    });
   });
 
   it("404s on a version nobody has heard of", () => {
@@ -75,11 +109,21 @@ describe("resolveRoute with latestAtRoot", () => {
   const source = () => build({ latestAtRoot: true });
 
   it("treats a segment-less request as the newest release", () => {
-    expect(resolveRoute(source(), ["guide", "intro"])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0", "guide", "intro"] });
+    expect(resolveRoute(source(), ["guide", "intro"])).toEqual({
+      kind: "page",
+      version: "3.0.0",
+      slugs: ["3.0.0", "guide", "intro"],
+      inheritedFrom: { version: "1.0.0", hops: 2 }
+    });
   });
 
   it("resolves the bare base URL to the newest release's landing page", () => {
-    expect(resolveRoute(source(), [])).toEqual({ kind: "page", version: "3.0.0", slugs: ["3.0.0"] });
+    expect(resolveRoute(source(), [])).toEqual({
+      kind: "page",
+      version: "3.0.0",
+      slugs: ["3.0.0"],
+      inheritedFrom: { version: "1.0.0", hops: 2 }
+    });
   });
 
   it("still honours an explicit older segment", () => {
@@ -157,6 +201,27 @@ describe("redirect outputs", () => {
 
   it("produces no params when nothing was ever renamed", () => {
     expect(redirectParams(overlaySource({ source: fakeStaticSource(fumadocsPage("1.0.0/a.md")) }))).toEqual([]);
+  });
+});
+
+describe("the inherited-notice switch", () => {
+  it("is on unless a project turns it off", () => {
+    expect(build().inheritedNotice).toBe(true);
+    expect(build({ inheritedNotice: true }).inheritedNotice).toBe(true);
+    expect(build({ inheritedNotice: false }).inheritedNotice).toBe(false);
+  });
+
+  it("changes what to show, never what is true", () => {
+    // Turning the notice off is a rendering choice. Withholding the fact would leave a consumer
+    // unable to make any other choice with it.
+    const quiet = build({ inheritedNotice: false });
+
+    expect(resolveRoute(quiet, ["3.0.0", "guide", "intro"])).toEqual({
+      kind: "page",
+      version: "3.0.0",
+      slugs: ["3.0.0", "guide", "intro"],
+      inheritedFrom: { version: "1.0.0", hops: 2 }
+    });
   });
 });
 

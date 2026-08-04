@@ -24,6 +24,17 @@ export interface OverlayFumadocsOptions<S extends StaticSource = StaticSource> {
   /** Display labels, e.g. `{ next: "Next 🚧" }`. */
   readonly labels?: Readonly<Record<VersionId, string>> | undefined;
   /**
+   * Whether readers should be told that a page comes from an older version — the fact
+   * `resolveRoute()` reports as `inheritedFrom`.
+   *
+   * Carried, not acted on: this package renders nothing. It lives here so a project decides once,
+   * where it already declares `labels` and `channels`, instead of every consumer inventing its own
+   * switch. Turning it off never hides the fact from `resolveRoute()`; it only says not to show it.
+   *
+   * @defaultValue `true`
+   */
+  readonly inheritedNotice?: boolean | undefined;
+  /**
    * Serve one version at the base URL, so `/docs/guide/a` is the current documentation and
    * `/docs/11.13.0/guide/a` the old one. This is the Docusaurus URL shape, so migrating a site
    * breaks no existing link.
@@ -53,6 +64,8 @@ export interface OverlaySource<S extends StaticSource = StaticSource> {
   /** The version served at the base URL, when `latestAtRoot` is on. */
   readonly root: VersionInfo | undefined;
   readonly baseUrl: string;
+  /** The {@link OverlayFumadocsOptions.inheritedNotice} choice, for the rendering layer to honour. */
+  readonly inheritedNotice: boolean;
   readonly diagnostics: readonly Diagnostic[];
   /** Adds to {@link diagnostics}, so a loader plugin can report through the same channel. */
   report(diagnostic: Diagnostic): void;
@@ -127,6 +140,7 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
     latest: latestId === undefined ? undefined : byId.get(latestId),
     root: rootId === undefined ? undefined : byId.get(rootId),
     baseUrl,
+    inheritedNotice: options.inheritedNotice !== false,
     diagnostics,
     report: onDiagnostic,
     url: slugs => {
