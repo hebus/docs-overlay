@@ -1,7 +1,7 @@
 import type { ContentEntry, Overlay, Version, VersionId } from "docs-overlay";
 import type { MetaData, PageData, StaticSource, VirtualFile } from "fumadocs-core/source";
 
-import { defaultVersionSegment, reSegment, slash, withSegment, type VersionSegmentFn } from "./paths.js";
+import { defaultVersionSegment, reSegment, scopedSegment, slash, withSegment, type VersionSegmentFn } from "./paths.js";
 
 /** Metadata the core carries around: whatever `fumadocs-mdx` put on a page or a `meta.json`. */
 export type FumadocsMeta = PageData | MetaData;
@@ -55,6 +55,11 @@ export interface ToFumadocsSourceOptions {
   readonly extraFiles?: readonly VirtualFile[] | undefined;
   /** Set to `false` when the caller emits metadata itself, e.g. through `buildMetaFiles()`. */
   readonly includeMetas?: boolean | undefined;
+  /**
+   * Documentation this source belongs to, when a site serves several. Prefixes paths and slugs, so
+   * two documentations can feed one `loader()` without their `2.0.0/…` files colliding.
+   */
+  readonly scope?: string | undefined;
 }
 
 /**
@@ -77,13 +82,15 @@ export function toFumadocsSource(overlay: Overlay<FumadocsMeta>, versionId: Vers
   if (version === undefined) return { files: [...(options.extraFiles ?? [])] };
 
   const segment = (options.versionSegment ?? defaultVersionSegment)(version);
+  // The path carries the scope as a directory; the slugs carry it as its own segment.
+  const pathSegment = scopedSegment(options.scope, segment);
   const files: VirtualFile[] = [];
 
   for (const page of overlay.getPages(versionId)) {
     files.push({
       type: "page",
-      path: reSegment(page.source.path, segment),
-      slugs: withSegment(segment, page.slug),
+      path: reSegment(page.source.path, pathSegment),
+      slugs: withSegment(segment, page.slug, options.scope),
       data: page.meta as PageData,
       ...(page.origin === undefined ? {} : { absolutePath: page.origin })
     });
@@ -93,7 +100,7 @@ export function toFumadocsSource(overlay: Overlay<FumadocsMeta>, versionId: Vers
     for (const meta of overlay.getMetas(versionId)) {
       files.push({
         type: "meta",
-        path: reSegment(meta.source.path, segment),
+        path: reSegment(meta.source.path, pathSegment),
         data: meta.meta as MetaData,
         ...(meta.origin === undefined ? {} : { absolutePath: meta.origin })
       });
@@ -113,7 +120,13 @@ export function toFumadocsSourceAll(
   const files: VirtualFile[] = [];
 
   for (const version of versions) {
-    files.push(...toFumadocsSource(overlay, version.id, { versionSegment: options.versionSegment, includeMetas: options.includeMetas }).files);
+    files.push(
+      ...toFumadocsSource(overlay, version.id, {
+        versionSegment: options.versionSegment,
+        includeMetas: options.includeMetas,
+        scope: options.scope
+      }).files
+    );
   }
 
   files.push(...(options.extraFiles ?? []));

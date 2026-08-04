@@ -1,7 +1,7 @@
 import type { DiagnosticSink, Overlay, ResolvedPage, VersionId } from "docs-overlay";
 import type { MetaData, VirtualFile } from "fumadocs-core/source";
 
-import { reSegment } from "./paths.js";
+import { reSegment, scopedSegment } from "./paths.js";
 import type { FumadocsMeta } from "./reproject.js";
 import type { VersionInfo } from "./version-info.js";
 
@@ -69,6 +69,12 @@ export interface BuildMetaFilesOptions {
   readonly rootPerVersion?: boolean | undefined;
   /** Emit the site-level `meta.json` listing versions newest first. */
   readonly orderVersions?: boolean | "asc" | "desc" | undefined;
+  /**
+   * Documentation these files belong to, when a site serves several. Without it, two documentations
+   * would both emit `meta.json` and `<segment>/meta.json`, and one would silently overwrite the
+   * other in the loader's single file system.
+   */
+  readonly scope?: string | undefined;
 }
 
 /**
@@ -102,7 +108,7 @@ export function buildMetaFiles(overlay: Overlay<FumadocsMeta>, options: BuildMet
 
       files.push({
         type: "meta",
-        path: reSegment(meta.source.path, info.segment),
+        path: reSegment(meta.source.path, scopedSegment(options.scope, info.segment)),
         data: meta.dir === "" ? withRoot(merged, info, options.rootPerVersion !== false) : merged,
         ...(meta.origin === undefined ? {} : { absolutePath: meta.origin })
       });
@@ -111,7 +117,7 @@ export function buildMetaFiles(overlay: Overlay<FumadocsMeta>, options: BuildMet
     // No `meta.json` at the version root? Synthesise one, otherwise nothing marks the version as a
     // sidebar root and every version's pages land in one flat tree.
     if (options.rootPerVersion !== false && overlay.getMeta(info.id, "") === undefined) {
-      files.push({ type: "meta", path: `${info.segment}/meta.json`, data: { root: true, title: info.label } });
+      files.push({ type: "meta", path: `${scopedSegment(options.scope, info.segment)}/meta.json`, data: { root: true, title: info.label } });
     }
   }
 
@@ -120,7 +126,9 @@ export function buildMetaFiles(overlay: Overlay<FumadocsMeta>, options: BuildMet
     // Without this, the tree sorts by `localeCompare` and 11.10.0 lands before 11.9.0 — and
     // mint-internal really does have 11.6.1 through 11.14.0 side by side.
     const segments = options.versions.map(info => info.segment);
-    files.push({ type: "meta", path: "meta.json", data: { pages: ordering === "asc" ? segments : [...segments].reverse() } });
+    // Scoped, or the second documentation's version list would overwrite the first one's.
+    const path = options.scope === undefined || options.scope === "" ? "meta.json" : `${options.scope}/meta.json`;
+    files.push({ type: "meta", path, data: { pages: ordering === "asc" ? segments : [...segments].reverse() } });
   }
 
   return files;
