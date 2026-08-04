@@ -49,6 +49,7 @@ inside the version it was written in.
 | `versionTree(source, segment)`           | The sidebar tree scoped to one version.                                                                                                                 |
 | `findOrphanPages(source)`                | Pages that are routed but that no tree reaches.                                                                                                         |
 | `versionTagOf(page)`                     | Version segment of a page, for tagging a search index.                                                                                                  |
+| `searchTagsOf(overlay, page)`            | Product **and** version tags, for a site serving several documentations.                                                                                |
 | `appendRest()` / `strictMeta()`          | How an inherited `meta.json` adapts to a newer version.                                                                                                 |
 | `toNextRedirects` / `toNetlifyRedirects` | Redirect rules for a server deployment.                                                                                                                 |
 | `overlayDynamicSource(options)`          | Development variant, rebuilt on `invalidate()`.                                                                                                         |
@@ -115,6 +116,25 @@ of those links would 404.
 **Filter the search index by version.** A page served by five versions produces five index entries
 pointing at the same `structuredData`, so an unfiltered query returns five copies. Tag with
 `versionTagOf(page)` and filter on the client.
+
+## Several documentations on one site
+
+A monorepo publishing three packages releases them on three schedules, so one version list cannot
+describe all three. Give each product a `scope` and it gets its own versions, its own `latest`, and its
+own place in the URL — `/docs/alpha/2.0.0/…` — while several scoped instances feed **one** `loader()`,
+which keeps one page tree, one search index, and relative links that resolve.
+
+```ts
+export const alpha = overlaySource({ source: content, scope: "alpha", channels: ["next"] });
+export const beta = overlaySource({ source: content, scope: "beta", channels: ["next"] });
+```
+
+Leave `scope` out and nothing changes: a single-product site never sees it.
+
+The full walkthrough — folders, the route, `staticParams()`, search tags, and what does not work — is
+on the site: **[Several documentations](https://hebus.github.io/docs-overlay/docs/next/multiple-products/)**.
+A working site is in [`examples/fumadocs-multi`](../../../examples/fumadocs-multi), whose `postbuild`
+asserts the exported HTML.
 
 ## Peer dependencies
 
