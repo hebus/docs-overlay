@@ -83,8 +83,8 @@ differently from five.
 Do not link to the defining version. It serves the very same file, so the link leads to identical
 prose — the reader gains nothing and loses their place.
 
-You are reading this on `next`, which is the only version whose folder holds this page — so it is the
-one page here with no notice at the top. The five around it have one.
+This page is its own example: whichever version's folder actually holds it shows no notice, and every
+version that inherits it shows one.
 
 ### Turning the notice off
 

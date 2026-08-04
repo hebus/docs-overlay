@@ -55,12 +55,26 @@ Two refusals worth knowing about, because both protect the same thing — that n
 git describe the same tree:
 
 - **a dirty working tree**, since the tag it pushes points at `HEAD`;
-- **a `HEAD` that did not introduce the version**. Merge the version pull request and release from
-  that commit. If features have landed since, cut a new version rather than shipping a tree that is
-  ahead of its own changelog. There is deliberately no escape hatch.
+- **a package whose own files changed after its version was set**. Release from the version commit, or
+  close to it. If features have landed in that package since, cut a new version rather than shipping a
+  tree that is ahead of its own changelog. There is deliberately no escape hatch. Note what this
+  deliberately allows: touching anything _outside_ the package directories — the lockfile, the
+  documentation site — does not block a release, which is what lets the version pull request also cut
+  the docs.
 
 Everything else is idempotent: a version already on npmjs is skipped and an existing tag is left
 alone, so an interrupted release can simply be run again.
+
+### Cutting the documentation
+
+Nothing to do: `changeset:version` runs `scripts/cut-docs.mjs` inside the version pull request, so the
+cut is committed and reviewed with the bump rather than remembered afterwards.
+
+The site documents the engine, so the folder takes **`docs-overlay`'s** version. A release of the
+adapter alone therefore cuts nothing — the unreleased pages stay in `next/` until the engine ships — and
+the script prints which of the two happened. It is idempotent, because the version commit is rebuilt on
+every push to `main`, and it refuses a name the engine would not read as a version rather than creating
+a folder that would silently disappear from the site.
 
 ## Changesets
 
