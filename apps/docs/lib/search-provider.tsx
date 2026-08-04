@@ -6,6 +6,8 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 
 import type { VersionTab } from "docs-overlay-fumadocs";
 
+import { versionOfPathname } from "@/lib/version-of-pathname";
+
 /**
  * `RootProvider` with the search dialog wired for a static export.
  *
@@ -35,17 +37,4 @@ export function SearchRootProvider({ basePath, tabs, children }: { basePath: str
       {children}
     </RootProvider>
   );
-}
-
-/**
- * Version a URL is reading, matched against the version URLs rather than by parsing segments: under
- * `latestAtRoot` the release has no segment of its own, so `/docs/authoring` is `0.1.0` while
- * `/docs/next/authoring` is `next`. Longest URL first, since `/docs` prefixes `/docs/next`.
- *
- * Off the documentation entirely — the landing page — search covers the latest version.
- */
-function versionOfPathname(pathname: string, tabs: readonly VersionTab[]): string | undefined {
-  const match = [...tabs].sort((a, b) => b.url.length - a.url.length).find(tab => pathname === tab.url || pathname.startsWith(`${tab.url}/`));
-
-  return (match ?? tabs.find(tab => tab.isLatest))?.version;
 }

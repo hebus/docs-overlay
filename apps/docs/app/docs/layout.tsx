@@ -21,7 +21,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       // Only shown once there is more than one version to choose between. The `key` is not
       // decoration: `Sidebar` drops the banner into an array of children, and React only exempts
       // children created in that same call from needing one.
-      sidebar={tabs.length > 1 ? { banner: <VersionSelect key="version-select" tabs={tabs} current={overlay.latest?.id ?? ""} /> } : undefined}>
+      sidebar={tabs.length > 1 ? { banner: <VersionSelect key="version-select" tabs={tabs} /> } : undefined}>
       {children}
     </DocsLayout>
   );
