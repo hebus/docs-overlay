@@ -103,3 +103,35 @@ compilation, because the contract that matters is the one Fumadocs implements.
 When a test encodes a decision rather than a mechanism, say so in a comment. `resolve("4.0.0",
 "guide/old")` returning a redirect is a choice about link rot, not an implementation detail, and the
 test is there to stop it being reversed by accident.
+
+Both adapters also carry an architecture test, because TypeScript catches neither of their rules: npm
+hoists every workspace dependency, so a stray import of a framework — or of `node:fs` in an adapter that
+claims to perform no I/O — resolves and compiles here, then breaks in a consumer's project. Keep Node's
+ambient types out of an adapter's own `src` project, in a separate test project if the test needs them:
+with `process` and `Buffer` in scope, "performs no I/O" becomes a stated intention rather than a checkable
+claim.
+
+### A Docusaurus example cannot be a workspace
+
+If you add one, exclude it from `workspaces` and give it its own lockfile — the root `package.json`
+already carries `"!examples/docusaurus-classic"` for this. Docusaurus pulls `react-router@5`, npm hoists
+it to the root, and `fumadocs-core` then cannot resolve its own: `npm install` fails with `ERESOLVE`, and
+`--legacy-peer-deps` would hide a real incompatibility across the whole repository. Two frameworks whose
+transitive trees do not belong in one hoisted `node_modules`.
+
+It has to depend on the packages through `file:` links, which has the side benefit of exercising their
+published `exports` maps the way a real consumer does.
+
+## Migration notes
+
+`notes/migrations/<name>/` holds the journal of a real migration: `journal.jsonl` is append-only and is
+the source of truth, everything else is projected from it by `npm run render:journal`.
+
+It exists because two deliverables are meant to be **derived** from a migration rather than invented — the
+migration command, and the guide for people doing it to their own site. Both need to know which steps a
+tool can take unattended and which need a human, and that split has to be recorded at the time; recording
+it afterwards is indistinguishable from guessing it.
+
+`npm run check:journal` refuses a journal that could have been reconstructed. `npm run check:coverage`
+refuses documentation that stopped mentioning a judgement or a pitfall the journal recorded — those are the
+entries that cost the most to rediscover and the easiest to drop. Both run in CI.
