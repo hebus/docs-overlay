@@ -122,6 +122,33 @@ A removed page gets an explanation instead of a 404: what version removed it, wh
 it, and where to go instead when the author said. That is the most visible gain over a plain Docusaurus
 site.
 
+### Filter `unlisted` in your sidebar generator, do not rely on the flag
+
+`unlisted` hides a page in **production only**: Docusaurus computes it as
+`isProduction(env) && frontMatter.unlisted`, so in development the flag is inert and every stub comes back
+into the sidebar. `docusaurus build` looks perfect while `npm start` shows nine "Moved to …" entries sitting
+among the real documents — wrong every day, for the person actually writing the docs.
+
+Filter them yourself, and the sidebar is the same in both environments:
+
+```js
+sidebarItemsGenerator: async ({ defaultSidebarItemsGenerator, ...args }) => {
+  const items = await defaultSidebarItemsGenerator(args);
+  const unlisted = new Set(args.docs.filter(doc => doc.frontMatter?.unlisted === true).map(doc => doc.id));
+
+  const prune = list =>
+    list
+      .filter(item => !((item.type === "doc" || item.type === "ref") && unlisted.has(item.id)))
+      .map(item => (item.type === "category" ? { ...item, items: prune(item.items) } : item))
+      // Docusaurus refuses a category with no items, so an emptied one has to go.
+      .filter(item => item.type !== "category" || item.items.length > 0);
+
+  return prune(items);
+};
+```
+
+This is not overlay-specific — it is what the flag reads as meaning.
+
 ## What is not supported
 
 Versioned i18n. Docusaurus keeps translations under `i18n/<locale>/docusaurus-plugin-content-docs/`,

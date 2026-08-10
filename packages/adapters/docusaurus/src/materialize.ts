@@ -176,7 +176,7 @@ export function materialize(overlay: Overlay<DocusaurusMeta>, options: Materiali
       const stub = stubFor(overlay, version, versions, entry.slug, entry.kind, templates, routeBasePath, report);
       if (stub === undefined) continue;
 
-      const path = stubPath(entry.slug, emitted, dirNames);
+      const path = stubPath(entry.slug);
       files.push({ kind: "write", path: `${version.docsDir}/${path}`, contents: stub.contents });
       // Deliberately not added to `docIds`. A stub is a route, not a page: counting it would let an
       // inherited sidebar keep pointing at a page this version removed, and would hide a rename from the
@@ -326,16 +326,20 @@ function stubFor(
 }
 
 /**
- * Where a stub's file goes.
+ * Where a stub's file goes: always `<slug>.mdx`, beside any directory of the same name.
  *
- * `<slug>.mdx`, unless the slug is also a directory holding pages — then `<slug>/index.mdx`, because a
- * file and a directory cannot share a name.
+ * An earlier version wrote `<slug>/index.mdx` whenever the slug also named a directory, on the belief that
+ * a file and a directory cannot share a name. They can — `customization.mdx` and `customization/` differ by
+ * the extension — and the special case was actively harmful: Docusaurus treats `index.mdx` as the
+ * **category index** of its folder, so the stub became the category's `link` and supplied its label. The
+ * sidebar then read "Moved to …" where the folder's name belonged, and a site filtering `unlisted` doc
+ * items never caught it, because it was no longer a doc item.
+ *
+ * Beside the directory it is an ordinary page: same slug, no category captured.
  */
-function stubPath(slug: Slug, emitted: ReadonlySet<string>, dirNames: ReadonlySet<string>): string {
+function stubPath(slug: Slug): string {
   const key = slugKey(slug);
-  if (key === "") return "index.mdx";
-  if (dirNames.has(key)) return `${key}/index.mdx`;
-  return emitted.has(`${key}.mdx`) || emitted.has(`${key}.md`) ? `${key}/index.mdx` : `${key}.mdx`;
+  return key === "" ? "index.mdx" : `${key}.mdx`;
 }
 
 /** Doc id the overlay redirects `docId` to, when it redirects it at all. */
