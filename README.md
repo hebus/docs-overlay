@@ -15,13 +15,19 @@ snapshot-based versioning tool.
 
 ## Packages
 
-| Package                                               | Role                                                                                                                       |
-| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [`docs-overlay`](packages/core)                       | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
-| [`docs-overlay-fumadocs`](packages/adapters/fumadocs) | Fumadocs / Next.js adapter.                                                                                                |
+| Package                                                   | Role                                                                                                                       |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| [`docs-overlay`](packages/core)                           | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
+| [`docs-overlay-fumadocs`](packages/adapters/fumadocs)     | Fumadocs / Next.js adapter. Re-projects a source the framework already read.                                               |
+| [`docs-overlay-docusaurus`](packages/adapters/docusaurus) | Docusaurus adapter. Plans the tree Docusaurus insists on reading from disk.                                                |
+| [`docs-overlay-cli`](packages/cli)                        | The one command line: `cut`, `check`, `prune`, `materialize`, `migrate docusaurus`.                                        |
 
 Adapters depend on the core, never the reverse. Adding support for another framework means
 writing an adapter — it must never require a change to the core.
+
+Neither adapter touches the filesystem: the Fumadocs one because the framework does the reading, the
+Docusaurus one because the CLI does the writing. That keeps I/O in one module, which is what lets an
+adapter be tested without a disk and puts every rule about not destroying somebody's files in one place.
 
 ## Authoring convention
 

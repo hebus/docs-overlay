@@ -1,0 +1,51 @@
+{
+  "name": "docs-overlay-cli",
+  "version": "0.0.0",
+  "description": "Command line for docs-overlay: cut a release, check content, and materialise a Docusaurus tree.",
+  "license": "MIT",
+  "author": "Olivier Tomé",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "docs-overlay": "./bin/docs-overlay.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "dev": "vite build --watch"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "docs-overlay": "^0.1.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "docs-overlay-docusaurus": "*"
+  },
+  "keywords": [
+    "docs-overlay",
+    "documentation",
+    "versioning",
+    "cli",
+    "docusaurus"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hebus/docs-overlay.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/hebus/docs-overlay/tree/main/packages/cli#readme",
+  "bugs": "https://github.com/hebus/docs-overlay/issues"
+}

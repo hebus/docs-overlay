@@ -12,5 +12,5 @@
   "printWidth": 160,
   "endOfLine": "lf",
   "experimentalSortPackageJson": false,
-  "ignorePatterns": ["**/dist/**", "**/out/**", "**/.next/**", "**/.source/**", "*.html"]
+  "ignorePatterns": ["**/dist/**", "**/out/**", "**/.next/**", "**/.source/**", "*.html", "notes/migrations/*/journal.md", "notes/migrations/*/derived/**"]
 }

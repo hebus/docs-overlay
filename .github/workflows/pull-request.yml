@@ -28,6 +28,11 @@ jobs:
       # Packs the core and runs it in a directory with no node_modules at all, so the
       # framework-independence rule is proven on the artefact and not only on the sources.
       - run: npm run verify:independence
+      # The journal is what the migration guide and the command surface are derived from. Both
+      # checks defend that: one refuses a journal that could have been reconstructed afterwards,
+      # the other refuses documentation that quietly dropped a judgement or a pitfall it recorded.
+      - run: npm run check:journal
+      - run: npm run check:coverage
 
   sites:
     # Separate job so a Next or MDX failure reads as such, instead of looking like a library failure.

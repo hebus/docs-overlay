@@ -10,6 +10,21 @@
 export type { InvalidationResult, Overlay, OverlayOptions, VersionEntry } from "./create-overlay.js";
 export { createOverlay } from "./create-overlay.js";
 export type { Dependent, EntryDependent, EntryDependentKind, MetaDependent } from "./graph/dependency-graph.js";
+export type { CandidateInput, CandidateThresholds, CandidateWeights, Ineligible, Ranking, RenameCandidate, Verdict } from "./migrate/rename-candidates.js";
+export { DEFAULT_THRESHOLDS, DEFAULT_WEIGHTS, rankCandidates, replacementSuggestions } from "./migrate/rename-candidates.js";
+export type {
+  Snapshot,
+  SnapshotDecision,
+  SnapshotFile,
+  SnapshotPlan,
+  SnapshotPlanOptions,
+  SnapshotQuestion,
+  SnapshotStats,
+  SnapshotStep
+} from "./migrate/snapshot-plan.js";
+export { decisionKey, planSnapshots } from "./migrate/snapshot-plan.js";
+export type { Comparable } from "./migrate/similarity.js";
+export { comparable, contentScore, pathScore, stemScore, titleScore } from "./migrate/similarity.js";
 export type { Diagnostic, DiagnosticCode, DiagnosticSeverity, DiagnosticSink } from "./models/diagnostic.js";
 export type { DocumentationSource } from "./models/documentation-source.js";
 export type { Slug, SlugKey, SourcePath, VersionId } from "./models/ids.js";

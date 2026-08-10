@@ -1,7 +1,15 @@
 ---
-title: Migrating from Docusaurus
-description: Folder mapping, steps, and an honest look at the payoff.
+title: Migrating from Docusaurus to Fumadocs
+description: Folder mapping, steps, and an honest look at the payoff — with Fumadocs as the destination.
 ---
+
+**This page leaves Docusaurus behind.** The destination is Fumadocs: the right-hand column of the table
+below is `docs-overlay-fumadocs` API, and step 3 is a Fumadocs install. It was never a way to keep
+Docusaurus, and the title did not say so.
+
+You can keep Docusaurus. A guide for that — **Staying on Docusaurus** — was added after this version was
+published, so it is not in this one; switch to a newer version in the sidebar to read it. The content
+model is identical either way, and only the last mile differs.
 
 Docusaurus stores each version as a full snapshot: `versioned_docs/version-11.14.0/` next to
 `versioned_docs/version-11.13.0/`, plus `versions.json` and one `versioned_sidebars/*.json` per

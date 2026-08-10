@@ -1,0 +1,81 @@
+parent 168 slugs · child 216 slugs
+shared 159 -> identical 40 / overrides 119
+added 57 · gone 9
+
+atomic/changelog  [614 B]  ->  ask (replacedBy?)
+    0.322  DISQUALIFIED atomic-angular/changelog
+           content 0.12 stem 1.00 path 0.00 title 1.00
+    0.250  DISQUALIFIED changelog
+           content 0.00 stem 1.00 path 0.00 title 1.00
+    0.075               atomic/api/change-password
+           content 0.00 stem 0.00 path 0.50 title 0.00
+
+mint/configurations/customization  [12493 B]  ->  rename (auto, identical body)
+    0.700               mint/configurations/customization/custom-json-files
+           content 1.00 stem 0.00 path 0.67 title 0.00
+    0.231               mint/configurations/customization/filters
+           content 0.22 stem 0.00 path 0.67 title 0.00
+    0.177               mint/configurations/custom-reuse-strategy
+           content 0.04 stem 0.00 path 1.00 title 0.00
+
+mint/configurations/filters  [5328 B]  ->  rename (auto, identical body)
+    0.950               mint/configurations/customization/filters
+           content 1.00 stem 1.00 path 0.67 title 1.00
+    0.272               atomic/examples/filters
+           content 0.08 stem 1.00 path 0.00 title 0.50
+    0.254  DISQUALIFIED atomic-angular/components/filters/filters
+           content 0.01 stem 1.00 path 0.00 title 1.00
+
+mint/configurations/logos-and-title  [4985 B]  ->  rename (auto, identical body)
+    0.950               mint/configurations/customization/logos-and-title
+           content 1.00 stem 1.00 path 0.67 title 1.00
+    0.252               mint/configurations/custom-reuse-strategy
+           content 0.17 stem 0.00 path 1.00 title 0.00
+    0.163               mint/configurations/customization/filters
+           content 0.11 stem 0.00 path 0.67 title 0.00
+
+mint/configurations/routes  [11776 B]  ->  rename (auto)
+    0.794               mint/configurations/customization/routes
+           content 0.74 stem 1.00 path 0.67 title 1.00
+    0.266  DISQUALIFIED atomic-angular/utils/routes
+           content 0.03 stem 1.00 path 0.00 title 1.00
+    0.213               mint/configurations/custom-reuse-strategy
+           content 0.11 stem 0.00 path 1.00 title 0.00
+
+mint/features/search/components/record-card  [0 B]  ->  tombstone (silent)
+    0.112               mint/features/search/data-flow
+           content 0.00 stem 0.00 path 0.75 title 0.00
+    0.075               mint/features/architecture
+           content 0.00 stem 0.00 path 0.50 title 0.00
+    0.075               mint/features/backend-connection
+           content 0.00 stem 0.00 path 0.50 title 0.00
+
+mint/features/search/search  [7207 B]  ->  ask (replacedBy?)
+    0.235  DISQUALIFIED atomic-angular/services/search
+           content 0.02 stem 1.00 path 0.00 title 0.50
+    0.155               mint/features/search/data-flow
+           content 0.01 stem 0.00 path 1.00 title 0.00
+    0.116               mint/features/backend-connection
+           content 0.03 stem 0.00 path 0.67 title 0.00
+
+mint/features/search/search-all  [5621 B]  ->  tombstone (silent)
+    0.150               mint/features/search/data-flow
+           content 0.00 stem 0.00 path 1.00 title 0.00
+    0.100               mint/features/architecture
+           content 0.00 stem 0.00 path 0.67 title 0.00
+    0.100               mint/features/backend-connection
+           content 0.00 stem 0.00 path 0.67 title 0.00
+
+mint/how-to/localization  [7680 B]  ->  rename (auto)
+    0.792               mint/how-to/localisation/localization
+           content 0.74 stem 1.00 path 0.67 title 1.00
+    0.181               mint/how-to/audit-interceptor
+           content 0.05 stem 0.00 path 1.00 title 0.00
+    0.171               mint/how-to/markdown-superscript
+           content 0.03 stem 0.00 path 1.00 title 0.00
+
+=== summary ===
+2  rename (auto): mint/configurations/routes, mint/how-to/localization
+3  rename (auto, identical body): mint/configurations/customization, mint/configurations/filters, mint/configurations/logos-and-title
+2  tombstone (silent): mint/features/search/components/record-card, mint/features/search/search-all
+2  ask (replacedBy?): atomic/changelog, mint/features/search/search
