@@ -115,7 +115,11 @@ const REQUIRED = {
   // but it belongs to adding a devDependency on Windows rather than to migrating a site onto an overlay —
   // and entry 55 records that its stated cause was wrong anyway. A guide that carried it would be teaching
   // npm's behaviour under the heading of ours. The CRLF lesson a reader does need is entry 4's.
-  52: []
+  52: [],
+  // Entry 57 is the decision that replaced the hand-maintained `sidebar_class_name: new`/`update` badges with
+  // derived marks while leaving `deprecated` and `draft` authored. Its two deliberate silences are the parts a
+  // reader cannot infer, so those are what the terms pin down — not the colours, which are one site's taste.
+  57: ["oldest version marks", "categories are left alone", "deprecated"]
 };
 
 if (!existsSync(journalPath)) {

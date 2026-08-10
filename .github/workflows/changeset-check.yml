@@ -4,6 +4,11 @@ on:
   pull_request:
     branches:
       - main
+    # `edited` is not in the default set, and without it the escape hatch this job prints in its own error
+    # message cannot work: adding `#skip-changeset` to the title triggers nothing, so the failed run stands.
+    # Re-running it by hand does not help either — a re-run replays the original event payload, title
+    # included — which leaves an empty commit as the only way out of a check that is telling you what to do.
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   check:
