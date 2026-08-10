@@ -1,5 +1,5 @@
 import { execFileSync, execSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import * as p from "@clack/prompts";
 
@@ -36,6 +36,8 @@ interface Manifest {
   readonly name: string;
   readonly version: string;
   readonly private?: boolean;
+  /** What npm will pack. Checked before publishing — see {@link assertArtefacts}. */
+  readonly files?: readonly string[];
 }
 
 type Releasable = Manifest & { readonly directory: string };
@@ -52,6 +54,43 @@ function capture(command: string, args: readonly string[]): string {
 
 function manifest(directory: string): Manifest {
   return JSON.parse(readFileSync(join(directory, "package.json"), "utf-8")) as Manifest;
+}
+
+/**
+ * Refuses to publish a package that would pack without the files it declares.
+ *
+ * `docs-overlay-cli@0.1.0` shipped as an empty tarball: `bin`, `README`, `LICENSE` and no `dist/` at all.
+ * The package was missing from the root `build` script, so nothing built it, `npm pack` packed what it
+ * found, and the failure surfaced two repositories away as `ERR_MODULE_NOT_FOUND` on
+ * `docs-overlay-cli/dist/cli.js` in a consumer's `node_modules`.
+ *
+ * This checks the artefacts rather than adding the package to one more list, because the same omission
+ * has now happened three times across four lists — `build`, `typecheck`, `typecheck:packaged` and
+ * `PACKAGES`. Adding a fifth list to forget would not help; failing whichever one was forgotten does.
+ */
+function assertArtefacts(pending: readonly Releasable[]): void {
+  const problems: string[] = [];
+
+  for (const entry of pending) {
+    // No `files` means npm packs almost everything, which cannot be empty by accident.
+    for (const declared of entry.files ?? []) {
+      const path = join(entry.directory, declared);
+      if (!existsSync(path)) {
+        problems.push(`${entry.name}: declares "${declared}" in files, and it does not exist`);
+        continue;
+      }
+      if (statSync(path).isDirectory() && readdirSync(path).length === 0) {
+        problems.push(`${entry.name}: declares "${declared}" in files, and it is empty`);
+      }
+    }
+  }
+
+  if (problems.length === 0) return;
+  throw new Error(
+    `${problems.length} package(s) would publish without their declared files:\n  ${problems.join("\n  ")}\n\n` +
+      `Nothing was published. This usually means the package is missing from the root \`build\` script,\n` +
+      `so it was never built — check that every entry in PACKAGES is also built there.`
+  );
 }
 
 /**
@@ -194,9 +233,11 @@ async function main(): Promise<void> {
   run("npm run build");
   building.stop("Build complete.");
 
-  // The gate that catches a broken `exports` map or a stray framework import before anything ships.
+  // The gate that catches a broken `exports` map or a stray framework import before anything ships —
+  // and, first, a package that would pack without the files it declares.
   const verifying = p.spinner();
   verifying.start("Verifying the artefacts…");
+  assertArtefacts(pending);
   run("npm run typecheck:packaged");
   run("npm run verify:independence");
   verifying.stop("Artefacts verified.");
