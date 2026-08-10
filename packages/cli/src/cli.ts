@@ -17,6 +17,7 @@ import { boolFlag, parseArgs, stringFlag } from "./args.js";
 import { checkCommand } from "./commands/check.js";
 import { cutCommand } from "./commands/cut.js";
 import { materializeCommand } from "./commands/materialize.js";
+import { pruneCommand } from "./commands/prune.js";
 import { fail, say } from "./log.js";
 
 const FLAGS = [
@@ -27,6 +28,7 @@ const FLAGS = [
   "--route-base-path=",
   "--label=",
   "--fail-on=",
+  "--version-id=",
   "--check",
   "--no-clean",
   "--dry-run",
@@ -42,6 +44,7 @@ const USAGE = `docs-overlay — versioned documentation you author as diffs
   docs-overlay materialize [--check]     write the tree Docusaurus reads from content/docs
   docs-overlay check                     run the engine's diagnostics, no framework needed
   docs-overlay cut <version>             the channel folder becomes that version
+  docs-overlay prune [--version-id V]    drop files a version repeats from what it inherits
 
 Common options
   --site-dir <path>          site root; default: the nearest ancestor with a docusaurus.config.*
@@ -63,6 +66,11 @@ check
 cut
   --dry-run                  print what would move
   --no-git                   plain filesystem move; history is not preserved
+
+prune
+  --version-id <V>           default: every version but the oldest, which inherits nothing
+  --dry-run                  list what would go
+  --no-git                   unlink instead of \`git rm\`
 `;
 
 export async function main(argv: readonly string[]): Promise<number> {
@@ -144,6 +152,16 @@ export async function main(argv: readonly string[]): Promise<number> {
         useGit: !boolFlag(parsed.flags, "no-git")
       });
     }
+
+    case "prune":
+      return pruneCommand({
+        contentDir,
+        channels,
+        version: stringFlag(parsed.flags, "version-id"),
+        dryRun: boolFlag(parsed.flags, "dry-run"),
+        useGit: !boolFlag(parsed.flags, "no-git"),
+        json
+      });
 
     default:
       fail(`Unknown command "${parsed.command}". Run \`docs-overlay --help\`.`);
