@@ -34,3 +34,9 @@ This site has two deployment targets with different baseUrl values. A baked-in U
 
 **Options not taken** `Preserve the index's CRLF with `git hash-object --no-filters` + `git update-index`, keeping a 108-line reviewable diff and leaving the renormalisation for whoever regenerates the file next` · `Renormalise every CRLF-in-index file in the repository in one dedicated commit, root package-lock.json included, so the policy and the index agree everywhere at once`
 
+## 57. Derive the `added` and `changed` marks from the overlay, keep `deprecated` and `draft` authored in the frontmatter, and render all four as one coloured bullet rather than a text badge -- with the oldest version marking nothing and categories left unmarked.
+
+The measurement of entry 56 settles the derivable half: a field nobody recomputes when a version is cut decays, and 8 wrong plus 65 missing out of 169 is what that decay looks like after one release. The other half is not derivable at all -- "this page is going away" and "this page is unfinished" are editorial judgements about the future, and no comparison of two trees can produce them -- so they stay authored. Rendering both halves the same way is what keeps the sidebar readable: one visual language, and a dot rather than a word because at 24 nested categories the labels wrapped and "update" told a reader less than its own colour does.
+
+**Options not taken** `Keep `deprecated` and `draft` as text badges while the derived marks are bullets, leaving two visual languages in one sidebar` · `Drop `deprecated` and `draft` entirely, so the sidebar shows only what a diff can derive and the editorial status disappears from the navigation` · `Go on maintaining `sidebar_class_name: new` / `update` by hand, accepting the decay entry 56 quantified` · `Mark categories as well, and pick a meaning for it -- the category's own index page, or anything beneath it`
+
