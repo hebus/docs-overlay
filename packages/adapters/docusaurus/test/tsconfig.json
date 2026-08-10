@@ -1,0 +1,10 @@
+{
+  // Separate project so `src/` never gets Node's ambient types. If `process` and `Buffer` were in
+  // scope there, "this adapter performs no I/O" would be a weaker claim than it looks — the same
+  // reasoning that keeps the core's architecture test out of its own `src/`.
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["."]
+}

@@ -29,8 +29,8 @@ const REGISTRY = "https://registry.npmjs.org/";
 const DRY_RUN = process.argv.includes("--dry-run");
 const ASSUME_YES = process.argv.includes("--yes");
 
-/** Publishable workspaces, in dependency order: the adapter depends on the core. */
-const PACKAGES = ["packages/core", "packages/adapters/fumadocs"];
+/** Publishable workspaces, in dependency order: every adapter depends on the core. */
+const PACKAGES = ["packages/core", "packages/adapters/fumadocs", "packages/adapters/docusaurus"];
 
 interface Manifest {
   readonly name: string;
