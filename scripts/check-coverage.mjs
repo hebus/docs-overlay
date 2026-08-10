@@ -109,7 +109,13 @@ const REQUIRED = {
   38: ["MSYS"],
   39: ["useBaseUrl"],
   40: ["export", "module"],
-  41: ["onBrokenLinks"]
+  41: ["onBrokenLinks"],
+  // Internal, declared rather than omitted, because a judgement's silence has to be deliberate: entry 52 is
+  // about the line endings of one site's `package-lock.json` after npm rewrote it. Real, and it cost time,
+  // but it belongs to adding a devDependency on Windows rather than to migrating a site onto an overlay —
+  // and entry 55 records that its stated cause was wrong anyway. A guide that carried it would be teaching
+  // npm's behaviour under the heading of ours. The CRLF lesson a reader does need is entry 4's.
+  52: []
 };
 
 if (!existsSync(journalPath)) {

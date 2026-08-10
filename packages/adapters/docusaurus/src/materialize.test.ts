@@ -235,3 +235,64 @@ describe("materialize", () => {
     expect(copies(result.files)[0]?.path).toBe("community_versioned_docs/version-1.0.0/a.md");
   });
 });
+
+describe("what each version added and changed", () => {
+  const TREE = [
+    page("1.0.0/index.md"),
+    page("1.0.0/guide/intro.md"),
+    page("1.0.0/guide/old.md"),
+    sidebarsFile("1.0.0", BASE),
+    // 2.0.0 overrides one page, adds another, inherits `index`, and renames `old` to `renamed`.
+    page("2.0.0/guide/intro.md"),
+    page("2.0.0/guide/extra.md"),
+    page("2.0.0/guide/renamed.md", { overlay: { renamedFrom: ["guide/old"] } })
+  ];
+
+  it("reads owning the file as the diff, and having no such slug before as an addition", () => {
+    const result = materialize(overlayOf(TREE));
+
+    expect(result.changes.find(change => change.version === "2.0.0")).toEqual({
+      version: "2.0.0",
+      added: ["guide/extra", "guide/renamed"],
+      changed: ["guide/intro"]
+    });
+  });
+
+  it("marks nothing in the oldest version, which has no predecessor to be new against", () => {
+    // Every page of the base tree is owned, so a naive reading would call all three of them new.
+    expect(materialize(overlayOf(TREE)).changes.find(change => change.version === "1.0.0")).toEqual({ version: "1.0.0", added: [], changed: [] });
+  });
+
+  it("marks nothing for a version that only inherits", () => {
+    expect(materialize(overlayOf(TREE)).changes.find(change => change.version === "next")).toEqual({ version: "next", added: [], changed: [] });
+  });
+
+  it("leaves generated sidebars alone unless classes are asked for", () => {
+    const plain = materialize(overlayOf(TREE));
+
+    expect(written(plain.files, "versioned_sidebars/version-2.0.0-sidebars.json")).not.toContain("className");
+  });
+
+  it("expands a string shorthand into a doc item so it can carry the class, and only when it needs one", () => {
+    const tree = [page("1.0.0/a.md"), page("1.0.0/b.md"), sidebarsFile("1.0.0", { docs: ["a", "b"] }), page("2.0.0/a.md")];
+    const result = materialize(overlayOf(tree), { changeClassNames: { changed: "is-changed" } });
+    const sidebar = JSON.parse(written(result.files, "versioned_sidebars/version-2.0.0-sidebars.json")!);
+
+    // `a` is overridden by 2.0.0 and becomes an object; `b` is inherited and stays the bare string it was.
+    expect(sidebar.docs).toEqual([{ type: "doc", id: "a", className: "is-changed" }, "b"]);
+  });
+
+  it("keeps a class the author already put on an entry, rather than replacing it", () => {
+    const tree = [page("1.0.0/a.md"), sidebarsFile("1.0.0", { docs: [{ type: "doc", id: "a", className: "deprecated" }] }), page("2.0.0/a.md")];
+    const result = materialize(overlayOf(tree), { changeClassNames: { changed: "is-changed" } });
+    const sidebar = JSON.parse(written(result.files, "versioned_sidebars/version-2.0.0-sidebars.json")!);
+
+    expect(sidebar.docs).toEqual([{ type: "doc", id: "a", className: "deprecated is-changed" }]);
+  });
+
+  it("omitting one of the two classes leaves that kind unmarked", () => {
+    const result = materialize(overlayOf(TREE), { changeClassNames: { changed: "is-changed" } });
+
+    expect(written(result.files, "versioned_sidebars/version-2.0.0-sidebars.json")!).not.toContain("is-new");
+  });
+});

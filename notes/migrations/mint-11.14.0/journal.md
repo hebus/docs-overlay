@@ -2,7 +2,7 @@
 
 Generated from `journal.jsonl` by `scripts/render-journal.mjs`. **Do not edit.**
 
-43 entries across 10 phases. 39 steps a tool could take unattended, 4 that need a human.
+55 entries across 11 phases. 50 steps a tool could take unattended, 5 that need a human.
 
 ## 1. setup — **pitfall**
 
@@ -527,4 +527,164 @@ Two claims written into commit messages were wrong and were corrected by amendin
 **Detectable by** `nslookup` reporting NXDOMAIN while exiting 0 -- read its output, or use `getent hosts` or a real fetch against a public host before concluding anything about the network. For the CI claim: list the workflow files and read their `on:` triggers rather than inferring from pipeline behaviour.
 
 <sub>`f30a6185` · 2026-08-10T12:09:33Z</sub>
+
+## 44. build — **pitfall**
+
+The user, installing the site for the first time since C5, hit `npm ci` refusing the tree in docusaurus/. Commit 4205a812 (`build(docs): generate the Docusaurus tree from content/ before every build`) added docs-overlay-cli and docs-overlay-docusaurus to docusaurus/package.json and left docusaurus/package-lock.json untouched, so the lockfile no longer described the manifest. This is a defect in the migration itself, not in the tooling. Nobody caught it because the plan's rule was "never run `npm install` in docusaurus/, `npm ci` is safe", and neither command was run between C5 and the user's install -- every build in this journal ran against an already-installed node_modules. Found by a human, not by any verification recorded here. Fixed in mint commit 071e2411 (seq 51).
+
+```sh
+npm ci  # in docusaurus/
+```
+
+**Pitfall** Declaring a devDependency without regenerating the lockfile in the same commit passes every check this migration ran: the builds used an already-installed node_modules, and the plan forbade `npm install` in docusaurus/ without requiring `npm ci` to be exercised even once. `npm ci` then refuses the tree outright -- and `npm ci` is the first thing a fresh clone and CI both do.
+
+**Workaround** Regenerate the lockfile in the same commit as the manifest, with `npm install --package-lock-only` (seq 45), and prove it with `npm ci --dry-run`.
+
+**Detectable by** `npm ci --dry-run` in the directory whose package.json changed. It fails with `npm ci can only install packages when your package.json and package-lock.json are in sync` and names the packages missing from the lock, so any change to a manifest should be followed by it.
+
+<sub>`f30a6185` · 2026-08-10T12:45:00Z</sub>
+
+## 45. build — measurement
+
+Measured the two ways of bringing docusaurus/package-lock.json back in sync, because they are not interchangeable. The user's plain `npm install` re-resolved the tree and drifted unrelated transitives -- algoliasearch 5.55.0 -> 5.56.0, plus browserslist, autoprefixer, baseline-browser-mapping, algoliasearch-helper, and address 1.2.2 -> 2.0.3 -- 87 packages changed, i.e. a nine-package addition riding inside an 87-package dependency refresh in a documentation commit. `npm install --package-lock-only` added exactly the 9 packages of the new closure and moved no existing resolution: 108 lines added, 1 removed, 0 versions changed. Validated with `npm ci --dry-run`: resolves, 28 packages added, no conflict. docs-overlay-cli went to ^0.1.1 rather than ^0.1.0 because 0.1.0 was published without its dist/ and fails at ERR_MODULE_NOT_FOUND on dist/cli.js -- unusable, not merely older.
+
+```sh
+npm install --package-lock-only  # in docusaurus/, then npm ci --dry-run
+```
+
+<sub>`f30a6185` · 2026-08-10T12:52:00Z · +0 −0 ~1</sub>
+
+## 46. sidebars — **pitfall**
+
+The user started the dev server and found the nine generated stubs listed among the real documents -- "Moved to ..." entries, and "Search (removed in 11.14.0)". The adapter emits one page per routable slug that is not a page (a <Redirect> per renamed page, an explanatory page per tombstone; 9 of them on mint 11.14.0), each carrying `unlisted: true` to stay out of navigation. Docusaurus computes that in node_modules/@docusaurus/utils/lib/contentVisibilityUtils.js as `isUnlisted({frontMatter, env}) => (isProduction(env) && frontMatter.unlisted) ?? false`, so the flag is inert in development: `docusaurus build` hid every stub -- which is exactly why seq 41's verification passed, 620 pages with onBrokenLinks 'throw' -- while `npm start` showed all nine. The lesson is worth recording on its own: a verification run only in production mode cannot see this class of defect, and production is the mode that matters least to the person writing the docs. Found by a human running the dev server, not by any verification in this journal. One detail from disk that the briefing did not carry: the same module also honours SIMULATE_PRODUCTION_VISIBILITY=true, a third way to reproduce production visibility without a build.
+
+```sh
+npm start  # in docusaurus/
+```
+
+**Pitfall** `unlisted: true` is a production-only concept in Docusaurus, so every generated stub reappears in the development sidebar among the real documents, with its "Moved to ..." text as its label. A migration verified with `docusaurus build` alone will never see it, and the built site is correct while the authoring experience is wrong.
+
+**Workaround** Do not rely on the flag: filter unlisted docs in your own `sidebarItemsGenerator` (`args.docs` carries `frontMatter`), and drop a category the filter empties, because Docusaurus refuses an empty category. Applied in mint's docusaurus/docusaurus.config.base.js as `withoutUnlisted()` (seq 48) and documented in the adapter's README under "Filter `unlisted` in your sidebar generator, do not rely on the flag", with the code.
+
+**Detectable by** Run the dev server and read the sidebar, or inspect .docusaurus/docusaurus-plugin-content-docs/default/p/*.json for stub labels. NOT detectable by a production build -- that is the whole point of the pitfall.
+
+<sub>`f30a6185` · 2026-08-10T13:05:00Z · owned by `materialize`</sub>
+
+## 47. sidebars — **pitfall**
+
+The unlisted filter removed 7 of the 9 stubs. The 2 survivors -- mint/configurations/customization and mint/features/search, the only two of the nine whose slug also names a directory -- are what pointed at the adapter rather than at the site configuration. stubPath() used to write <slug>/index.mdx whenever the slug also named a directory, on the belief that a file and a directory cannot share a name. They can: customization.mdx sits beside customization/, they differ by the extension. The special case was actively harmful, because Docusaurus reads index.mdx as the category index of its folder: the stub became the category's `link` and supplied its label, so the sidebar read "Moved to mint/configurations/customization/custom-json-files" where "Customization" belonged, and "Search (removed in 11.14.0)" where "Search" belonged. Worse, it made the obvious remedy blind -- a category index is no longer a doc item, so the withoutUnlisted() doc-item filter of seq 46 could never reach the two that mattered. Fixed in docs-overlay commit 223ade2 (PR #15, changeset proud-doors-sidebar): stubPath() always returns <slug>.mdx, and beside the directory a stub is an ordinary page -- same slug, same route, no category captured. 327 tests pass; the adapter's unit test was rewritten to "puts a stub beside a directory of the same name, never inside it as an index".
+
+**Pitfall** An index.mdx generated for a slug that also names a directory is captured by Docusaurus as that folder's category index: it supplies the category's link and its label, so the stub's "Moved to ..." text replaces the folder's name in every sidebar. And because a category index is not a doc item, a filter over unlisted doc items cannot reach it -- the pitfall hides the fix for the pitfall above it.
+
+**Workaround** stubPath() always returns <slug>.mdx. A file and a directory of the same name coexist, differing by the extension, so the stub sits beside the directory as an ordinary page: same slug, same route, no category captured.
+
+**Detectable by** Assert that the materialiser writes no file named index.mdx: any stub landing at <dir>/index.mdx is this bug. From the rendered side, a sidebar category whose label begins with "Moved to" or contains "(removed in".
+
+<sub>`f30a6185` · 2026-08-10T13:54:17Z · +1 −0 ~3 · owned by `materialize`</sub>
+
+## 48. sidebars — mechanical
+
+mint commit 6cbb37a7 (`fix(docs): keep generated stubs out of the sidebar in development`) landed the seq 46 workaround: 41 insertions, 3 deletions, one file. `withoutUnlisted(items, docs)` at docusaurus/docusaurus.config.base.js:69 builds a Set of the doc ids whose frontMatter.unlisted is true, filters `doc` and `ref` items out of the generated items, recurses into categories, and drops a category the filter empties rather than emitting it empty. It is wired at docusaurus.config.base.js:148-150 inside sidebarItemsGenerator, composed with the pre-existing capitalizeCategories(). The comment above it states the rule in its general form: this is not overlay-specific, any page marked unlisted stops appearing in a generated sidebar, which is what the flag reads as meaning.
+
+```sh
+git show --stat 6cbb37a7
+```
+
+<sub>`6cbb37a7` · 2026-08-10T13:57:06Z · +0 −0 ~1 · owned by `materialize`</sub>
+
+## 49. verify — **pitfall**
+
+My verification of the stubPath fix was worthless and the user caught it. The site consumes docs-overlay-docusaurus from npm -- ^0.1.0 in docusaurus/package.json at that point -- not from the monorepo, so a fix in the monorepo does not reach the site until it is published. I materialised with my local build and then ran `npx docusaurus start`, which skips the prestart script. The user ran `npm start`, whose prestart is `npm run materialize`, i.e. the published adapter, which rewrote customization/index.mdx as a stub and brought the bad category label straight back. The user reported "les folders expand/collapsed contiennent toujours la mention 'moved to xxx'" and was right: I had been measuring a tree that the real pipeline overwrote on its next run.
+
+```sh
+npm start  # in docusaurus/ -- runs prestart -> npm run materialize; NOT npx docusaurus start, which skips it
+```
+
+**Pitfall** Verifying through the underlying binary (`npx docusaurus start`) instead of the project's own script skips the `pre*` hook that regenerates the very inputs under test, so the verification measures a tree the real pipeline immediately overwrites. Compounded here by the site consuming the adapter from npm rather than from the monorepo, which makes the regenerated tree the *old* adapter's output.
+
+**Workaround** Interim: copy the local packages/adapters/docusaurus/dist over docusaurus/node_modules/docs-overlay-docusaurus/dist in the site. This is disposable -- the next `npm ci` wipes it -- and the real fix is publishing the adapter and bumping the range. Then always verify through `npm start` / `npm run build`, so prestart/prebuild run.
+
+**Detectable by** Whenever a `pre*` hook regenerates inputs, verify through the project's script, never the binary underneath it. Mechanically: compare the version of the adapter installed in node_modules against the version under test before trusting any result.
+
+<sub>`6cbb37a7` · 2026-08-10T13:58:30Z · owned by `materialize --check`</sub>
+
+## 50. config — **pitfall**
+
+mint's lint-staged sends every staged *.json to oxfmt, and a lockfile is a *.json: oxfmt writes `"cpu": ["arm64"]` where npm writes the array across three lines. Neither committed lockfile is in oxfmt's shape -- `"cpu": [` alone on its line appears 46 times under docusaurus/ and 338 at the root -- so no lockfile had been staged since mint moved to oxfmt, and staging the regenerated one would have been the first time. Fixed preventively in mint commit 335dc1a7 (`chore(lint): never let the formatter own a generated lockfile`), one insertion adding `**/package-lock.json` to .oxfmtrc.json ignorePatterns: the same class as the existing docusaurus/content/** entry. Confirmed on disk at .oxfmtrc.json:23, sitting among the overlay's other generated-tree exclusions.
+
+**Pitfall** A formatter configured by extension owns *.json, therefore it owns package-lock.json. A lockfile that goes through the hook comes out in a shape npm never produces; the next `npm install` writes npm's shape back, the next commit sends it to oxfmt again, and the file churns for as long as both tools keep their opinion.
+
+**Workaround** Add `**/package-lock.json` to the formatter's ignorePatterns before a lockfile is ever staged. A generated file's shape belongs to the tool that generates it.
+
+**Detectable by** grep the committed lockfile for `"cpu": [` alone on its line: if it is there, the formatter has never touched the file and staging it once will rewrite it wholesale. Equivalently, run the formatter over the lockfile in check mode and see whether it reports a change.
+
+<sub>`335dc1a7` · 2026-08-10T14:00:38Z · +0 −0 ~1</sub>
+
+## 51. build — **pitfall**
+
+mint commit 071e2411 (`build(docs): lock the overlay tooling the site now depends on`) fixed the seq 44 defect, and its diff is unreadable for a reason that has nothing to do with the change. Before the commit, `git ls-files --eol` reported `i/crlf w/lf attr/text=auto eol=lf` for docusaurus/package-lock.json, and `i/crlf w/crlf` for the root one: the file predates .gitattributes declaring `text=auto eol=lf`. npm rewrote it as LF, so `git add` normalised the whole file to the policy the repository already states -- the commit shows 21130 insertions and 21023 deletions for a 108-line semantic change, and docusaurus/package.json shows 122 changed lines for a one-line version bump. Both figures confirmed on disk from `git show --stat 071e2411`. `git ls-files --eol` now reports `i/lf w/lf` for docusaurus/package-lock.json and docusaurus/package.json, while the root package-lock.json is still `i/crlf w/crlf`: the normalisation happened, scoped to the two files this commit touched.
+
+```sh
+git ls-files --eol docusaurus/package-lock.json docusaurus/package.json package-lock.json; git show --stat 071e2411
+```
+
+**Pitfall** A file that is CRLF in the index under `text=auto eol=lf` normalises in full the first time a generator rewrites it as LF, so a 108-line change lands as a 21000-line diff and the review value of the diff is gone. Nothing warns: the attribute has been correct all along, it simply had not been applied to that blob yet.
+
+**Workaround** Isolate the generated file in its own commit and put the recipe for reading the real diff in the message: `git show HEAD:docusaurus/package-lock.json | tr -d '\r' > /tmp/before` then `tr -d '\r' < docusaurus/package-lock.json | diff /tmp/before -`.
+
+**Detectable by** `git ls-files --eol <path>` before staging: `i/crlf` together with `attr/... eol=lf` means the next regeneration renormalises the whole file. The root package-lock.json still reads `i/crlf` today, so the same surprise is waiting there.
+
+<sub>`071e2411` · 2026-08-10T14:02:11Z · +0 −0 ~2</sub>
+
+## 52. build — **judgement**
+
+Chose to let docusaurus/package-lock.json normalise to LF in the index rather than forcing CRLF back in with `git hash-object --no-filters` + `git update-index`, accepting the 21130/21023-line diff of commit 071e2411 for a 108-line change. The mitigation is in the commit's shape and message, not in the diff: the commit touches nothing but the lockfile and its manifest, and its message carries the two-command recipe to read the real change.
+
+**Decision** Normalise the lockfile to LF in the index rather than preserving its CRLF with `hash-object --no-filters` + `update-index`.
+
+**Why** `eol=lf` means every checkout is LF and npm writes LF, so normalising stops the churn once and for all, whereas preserving CRLF defers an identical 21000-line diff to whoever next regenerates the file -- and they will not have chosen it. The cost is one unreviewable diff, paid down by isolating the lockfile in its own commit and giving the `tr -d '\r'` recipe to read it.
+
+**Not taken** `Preserve the index's CRLF with `git hash-object --no-filters` + `git update-index`, keeping a 108-line reviewable diff and leaving the renormalisation for whoever regenerates the file next` · `Renormalise every CRLF-in-index file in the repository in one dedicated commit, root package-lock.json included, so the policy and the index agree everywhere at once`
+
+<sub>`071e2411` · 2026-08-10T14:02:11Z</sub>
+
+## 53. verify — verification
+
+Re-verified the episode through the project's own script -- so through prestart -> `npm run materialize` -- with the fixed adapter in place, which is the mistake of seq 49 not repeated. Reported: `files 622 planned - 4 written - 618 unchanged` and `removed 4 file(s)`; 0 index.mdx under versioned_docs and under .docs-overlay/current; no "Moved to" and no "(removed in" label in any sidebar of any of the 3 versions; the categories back to Customization and Search in all 3 versions; no previous/next navigation pointing at a stub; all 9 stub routes answering 200; and the production build unchanged at 620 pages with onBrokenLinks 'throw'. State on disk worth recording, since it moved after this run: docs-overlay 0.1.1 was released at 14:02:24Z (PR #16), docusaurus/node_modules/docs-overlay-docusaurus now reports version 0.1.1 with a dist mtime of 14:05:10Z, and mint's worktree carries an uncommitted bump of docs-overlay-docusaurus from ^0.1.0 to ^0.1.1 (1 line in the manifest, 4 in the lockfile) -- the disposable dist copy of seq 49 has been superseded by the published release, and that bump is not committed yet.
+
+```sh
+npm start  # in docusaurus/, then npm run build
+```
+
+**Verified** `npm start in docusaurus/ (so prestart -> npm run materialize regenerates the tree), then reading the dev sidebars of all three versions, counting index.mdx under versioned_docs and .docs-overlay/current, requesting the 9 stub routes, and npm run build for the production comparison` → expected the development sidebars match the production ones: no stub label anywhere, the two captured categories back to their own names, no stub reachable through previous/next, every stub route still answering 200, and the production build unchanged at 620 pages, got materialize reported 622 files planned, 4 written, 618 unchanged and 4 removed. 0 index.mdx under versioned_docs and under .docs-overlay/current. No "Moved to" or "(removed in" label in any sidebar of any of the 3 versions; categories back to Customization and Search in all 3. No previous/next navigation pointing at a stub. All 9 stub routes answer 200. Production build unchanged: 620 pages, onBrokenLinks 'throw'.
+
+<sub>`071e2411` · 2026-08-10T14:10:00Z · owned by `materialize --check`</sub>
+
+## 54. wrapup — measurement
+
+Corrected an assumption the plan stated. The plan said SECURITY-NOTES.md justifies the byte-identity of docusaurus/package-lock.json across branches by the identity of the package.json files. It does not: `grep -ic lock SECURITY-NOTES.md` returns 0, while `grep -c brace-expansion` returns 8 -- the file discusses only the accepted brace-expansion advisory. The byte-identity was my own measurement, not a documented assertion, so no section of SECURITY-NOTES.md needed updating in C5, and none was.
+
+```sh
+grep -ic lock SECURITY-NOTES.md; grep -c brace-expansion SECURITY-NOTES.md
+```
+
+<sub>`071e2411` · 2026-08-10T14:20:00Z</sub>
+
+## 55. build — **pitfall**
+
+Corrected the cause stated in entries 51 and 52. Both said `git add` renormalises a CRLF file to LF because .gitattributes declares `text=auto eol=lf`, and that this is why docusaurus/package-lock.json produced a 21130/21023-line diff for a 108-line change. Measured directly, it does not: staging an edited file that is already i/crlf in the index leaves it i/crlf and shows 0 insertions / 1 deletion. text=auto converts on the way in only for a path new to the index, so a tracked CRLF file keeps its CRLF through any number of edits. The real cause is simpler and belongs to npm: `npm install --package-lock-only` rewrote the whole file with LF terminators in the working tree, and git stored the bytes that were there. The same measurement is what made the 112-file frontmatter edit safe to stage in one go -- verified on a CRLF file among them, 0/1 with the index still i/crlf. The conclusion of entry 52 survives its wrong premise: storing LF matches the eol=lf every checkout already produces and is what stops the churn, whereas forcing CRLF back with hash-object --no-filters would hand the same 21000-line diff to whoever regenerates the file next.
+
+```sh
+git add <a modified i/crlf file>; git diff --cached --numstat -- <it>; git ls-files --eol -- <it>
+```
+
+**Pitfall** Believing that `text=auto eol=lf` makes `git add` renormalise any CRLF file. It does not touch a path already in the index as CRLF, so a huge EOL diff on a tracked file means something rewrote the file, not that git converted it -- and the difference decides whether you go looking for a git workaround or for the tool that did the rewriting.
+
+**Workaround** Measure before concluding: stage the file and read `git diff --cached --numstat` together with `git ls-files --eol`. If the index side is unchanged, git did nothing and the generator is responsible. hash-object --no-filters + update-index is only needed when git really would convert, which is when the path is new to the index.
+
+**Detectable by** `git ls-files --eol <path>` before and after `git add`: the i/ column not moving proves git applied no conversion. A numstat of 0/1 on an edit that removed one line proves the same thing from the other side.
+
+**Verified** `git add on one modified i/crlf content file and one i/lf one, then git diff --cached --numstat and git ls-files --eol on each, then git restore --staged` → expected if text=auto renormalised on add, the CRLF file would show a whole-file diff and flip to i/lf, got both files showed 0 insertions / 1 deletion; the CRLF one stayed i/crlf w/crlf and the LF one i/lf w/lf. No conversion took place.
+
+<sub>`ed79b400` · 2026-08-10T14:52:00Z</sub>
 
