@@ -27,6 +27,7 @@ export type {
   SidebarMerger
 } from "./sidebars.js";
 export { pruneMissing, referencesOf, strictSidebars } from "./sidebars.js";
+export type { IdentifierOptions } from "./slugs.js";
 export { DEFAULT_PAGE_EXTENSIONS, declaredSlug, docIdOf, docUrl, docusaurusSlugify } from "./slugs.js";
 export type { AliasStub, DeletedStub, RedirectStub, StubTemplates } from "./templates.js";
 export { defaultTemplates } from "./templates.js";

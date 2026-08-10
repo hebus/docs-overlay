@@ -187,7 +187,7 @@ export function materialize(overlay: Overlay<DocusaurusMeta>, options: Materiali
       }
       files.push({ kind: "copy", path: `${version.docsDir}/${rest}`, from: page.origin });
       emitted.add(rest);
-      const docId = docIdOf(rest, pageExtensions);
+      const docId = docIdOf(rest, pageExtensions, page.meta.frontMatter?.["id"]);
       docIds.add(docId);
       for (const dir of ancestorsOf(rest)) dirNames.add(dir);
 
@@ -383,7 +383,7 @@ function renamedTo(overlay: Overlay<DocusaurusMeta>, version: VersionId, docId: 
   if (resolution.kind !== "redirect") return undefined;
   const target = overlay.resolve(version, resolution.to);
   if (target.kind !== "own" && target.kind !== "inherited") return undefined;
-  return docIdOf(splitVersionSegment(target.page.source.path).rest, pageExtensions);
+  return docIdOf(splitVersionSegment(target.page.source.path).rest, pageExtensions, target.page.meta.frontMatter?.["id"]);
 }
 
 function labelOf(version: Version): string {
