@@ -193,7 +193,7 @@ describe("materialize", () => {
     expect(result.diagnostics.some(diagnostic => diagnostic.code === "redirect-target-missing")).toBe(true);
   });
 
-  it("puts a stub at <slug>/index.mdx when the slug is also a directory", () => {
+  it("puts a stub beside a directory of the same name, never inside it as an index", () => {
     const overlay = overlayOf([
       page("1.0.0/api.md"),
       page("1.0.0/api/one.md"),
@@ -202,8 +202,14 @@ describe("materialize", () => {
     ]);
 
     const result = materialize(overlay);
-    // `api` still names a directory holding `one.md`, so the stub cannot be `api.mdx` beside it.
-    expect(written(result.files, "versioned_docs/version-2.0.0/api/index.mdx")).toBeDefined();
+
+    // `api` also names a directory, and an earlier version wrote the stub as `api/index.mdx` for that
+    // reason. It was the wrong call twice over: a file and a directory can share a name when one carries an
+    // extension, and Docusaurus reads `index.mdx` as the **category index** of its folder — so the stub
+    // became the category's link and gave it its label. The sidebar then showed "… (removed in 2.0.0)"
+    // where the folder's name belonged, and a site filtering unlisted *doc* items never caught it.
+    expect(written(result.files, "versioned_docs/version-2.0.0/api.mdx")).toBeDefined();
+    expect(written(result.files, "versioned_docs/version-2.0.0/api/index.mdx")).toBeUndefined();
   });
 
   it("reports more than one channel rather than silently serving one of them", () => {
