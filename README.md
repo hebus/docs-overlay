@@ -185,7 +185,11 @@ import { createOverlay } from "docs-overlay";
 
 const overlay = createOverlay({ source: entries, channels: ["next"] });
 const outcome = overlay.resolve("2.0.0", ["guide", "intro"]);
-// → { kind: "inherited", definedIn: "1.0.0", ... } | "own" | "alias" | "redirect" | "deleted" | "missing"
+
+// outcome.kind is exactly one of:
+//   own · inherited · alias · redirect · deleted · missing · unknown-version
+// Each branch carries only its own fields, so a switch over it is checked by the compiler. For an
+// inherited page, `outcome.page.source.definedIn` names the version that actually wrote the file.
 ```
 
 See [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/).
