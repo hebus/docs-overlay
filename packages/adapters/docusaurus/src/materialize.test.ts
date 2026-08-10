@@ -134,7 +134,12 @@ describe("materialize", () => {
     expect(stub).toContain("unlisted: true");
     // 2.0.0 is the newest release, so it is `lastVersion` and served at the root: no version segment.
     // That is the URL shape a plain Docusaurus site produces, which is why nothing linked externally moves.
-    expect(stub).toContain('<Redirect to="/guide/new-api" />');
+    //
+    // The path carries no `baseUrl`; the page adds it with `useBaseUrl` at build time, which is what makes
+    // one materialisation serve every deployment target.
+    expect(stub).toContain('<Redirect to={useBaseUrl("/guide/new-api")} />');
+
+    expect(stub).not.toContain("baseUrl:");
     // One per version that still answers for the old slug: a rename in 2.0.0 keeps redirecting in the
     // channel that inherits from it, which is what stops a valid external link from 404ing after a cut.
     expect(result.redirects).toEqual([

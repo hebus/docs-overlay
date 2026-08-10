@@ -26,7 +26,11 @@ for byte rather than re-emitted, so line endings, encoding and every MDX import 
 - Every routable slug becomes a real route, not only the pages: aliases, old slugs and removed pages each
   get a generated `unlisted` stub. On a static host an un-generated slug is a 404 rather than a redirect,
   and `onBrokenLinks: 'throw'` cannot see targets that `@docusaurus/plugin-client-redirects` adds in
-  `postBuild` — so a stub is both the correct answer and one dependency fewer.
+  `postBuild` — so a stub is both the correct answer and one dependency fewer. Verified on a real build:
+  the stub answers 200 and its slug does not appear in the rendered sidebar.
+- Generated links carry no `baseUrl`; the page resolves it with `useBaseUrl` at build time. One
+  materialisation therefore serves every deployment target, and `materialize --check` in CI does not
+  depend on which target ran last.
 - `docsOptions` is derived rather than written, so a site with one config file per deployment target
   cannot have them disagree about `lastVersion` or `versions`.
 

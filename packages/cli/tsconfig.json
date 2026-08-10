@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Unlike the core and the adapters, this package exists to touch the filesystem, so Node's types
+    // belong in `src` here rather than being kept out of it.
+    "types": ["node"],
+    // Source aliases, for local development only: `tsconfig.packaged.json` drops them and typechecks
+    // against the built d.ts, which is what validates the published `exports` maps.
+    "paths": {
+      "docs-overlay": ["../core/src/index.ts"],
+      "docs-overlay-docusaurus": ["../adapters/docusaurus/src/index.ts"]
+    }
+  },
+  "include": ["src", "test"]
+}

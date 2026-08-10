@@ -66,14 +66,12 @@ export interface Materialization {
   readonly versions: readonly DocusaurusVersion[];
   /** The block to spread into the `docs` preset options. Derived, so it cannot drift from the tree. */
   readonly docsOptions: DocsPluginOptions;
-  /** Slug-to-slug rules, as URLs, for a caller that also wants real HTTP redirects. */
+  /** Slug-to-slug rules as site-root-relative paths, without `baseUrl`, for a caller wiring real HTTP redirects. */
   readonly redirects: readonly { readonly from: string; readonly to: string; readonly permanent: boolean }[];
   readonly diagnostics: readonly Diagnostic[];
 }
 
 export interface MaterializeOptions {
-  /** The site's `baseUrl`. Only used to build URLs that appear inside generated stubs. */
-  readonly baseUrl?: string | undefined;
   /** Must match the `docs` plugin's `routeBasePath`. */
   readonly routeBasePath?: string | undefined;
   /** Root of everything this adapter owns and may delete. */
@@ -98,7 +96,6 @@ export function materialize(overlay: Overlay<DocusaurusMeta>, options: Materiali
     options.onDiagnostic?.(diagnostic);
   };
 
-  const baseUrl = options.baseUrl ?? "/";
   const routeBasePath = options.routeBasePath ?? "docs";
   const outDir = options.outDir ?? ".docs-overlay";
   const prefix = options.pluginId === undefined || options.pluginId === "" ? "" : `${options.pluginId}_`;
@@ -176,7 +173,7 @@ export function materialize(overlay: Overlay<DocusaurusMeta>, options: Materiali
     // different answer, and on a static host a slug nobody generated is a 404 rather than a redirect.
     for (const entry of overlay.getEntries(version.id)) {
       if (entry.kind === "page") continue;
-      const stub = stubFor(overlay, version, versions, entry.slug, entry.kind, templates, baseUrl, routeBasePath, report);
+      const stub = stubFor(overlay, version, versions, entry.slug, entry.kind, templates, routeBasePath, report);
       if (stub === undefined) continue;
 
       const path = stubPath(entry.slug, emitted, dirNames);
@@ -268,12 +265,13 @@ function stubFor(
   slug: Slug,
   kind: "alias" | "redirect" | "deleted",
   templates: StubTemplates,
-  baseUrl: string,
   routeBasePath: string,
   report: DiagnosticSink
 ): Stub | undefined {
   const resolution = overlay.resolve(version.id, slug);
-  const url = (target: Slug, at: DocusaurusVersion = version): string => docUrl(baseUrl, routeBasePath, at.path, target);
+  // No `baseUrl`: the generated page adds it with `useBaseUrl`, which keeps the output identical for
+  // every deployment target.
+  const path = (target: Slug, at: DocusaurusVersion = version): string => docUrl("", routeBasePath, at.path, target);
   const servable = (target: Slug): boolean => {
     const kind = overlay.resolve(version.id, target).kind;
     return kind === "own" || kind === "inherited" || kind === "alias";
@@ -281,13 +279,13 @@ function stubFor(
 
   if (kind === "redirect" && resolution.kind === "redirect") {
     return {
-      contents: templates.redirect({ slug, to: resolution.to, url: url(resolution.to), permanent: resolution.permanent }),
-      redirect: { from: url(slug), to: url(resolution.to), permanent: resolution.permanent }
+      contents: templates.redirect({ slug, to: resolution.to, path: path(resolution.to), permanent: resolution.permanent }),
+      redirect: { from: path(slug), to: path(resolution.to), permanent: resolution.permanent }
     };
   }
 
   if (kind === "alias" && resolution.kind === "alias") {
-    return { contents: templates.alias({ slug, canonical: resolution.canonical, url: url(resolution.canonical) }) };
+    return { contents: templates.alias({ slug, canonical: resolution.canonical, path: path(resolution.canonical) }) };
   }
 
   if (kind === "deleted" && resolution.kind === "deleted") {
@@ -317,9 +315,9 @@ function stubFor(
         slug,
         deletedIn: resolution.deletedIn,
         lastAvailable,
-        lastAvailableUrl: at === undefined ? undefined : url(slug, at),
+        lastAvailablePath: at === undefined ? undefined : path(slug, at),
         replacedBy,
-        replacedByUrl: replacedBy === undefined ? undefined : url(replacedBy)
+        replacedByPath: replacedBy === undefined ? undefined : path(replacedBy)
       })
     };
   }

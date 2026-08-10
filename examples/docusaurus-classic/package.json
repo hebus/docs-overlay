@@ -1,0 +1,31 @@
+{
+  "name": "docs-overlay-example-docusaurus",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "materialize": "tsx ../../notes/migrations/mint-11.14.0/materialize-prototype.ts . .",
+    "prebuild": "npm run materialize",
+    "build": "docusaurus build",
+    "build:internal": "docusaurus build --config docusaurus.internal.config.js --out-dir build-internal",
+    "postbuild": "node scripts/assert-output.mjs",
+    "start": "npm run materialize && docusaurus start",
+    "clear": "docusaurus clear"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version"
+    ]
+  }
+}

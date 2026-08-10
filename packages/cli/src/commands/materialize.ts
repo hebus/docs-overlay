@@ -1,0 +1,101 @@
+/**
+ * Writes the tree Docusaurus reads, or checks that it is already the right one.
+ *
+ * The adapter decides *what* the tree should contain; this decides *whether to touch the disk*. Keeping
+ * that split means every rule about not destroying somebody's files lives in one place (`io.ts`) and
+ * every rule about Docusaurus lives in another.
+ */
+
+import type { Diagnostic } from "docs-overlay";
+import { join } from "node:path";
+
+import { assertWritable, readBytes, reconcile, type PlannedFile } from "../io.js";
+import { fail, formatDiagnostics, hasErrors, say } from "../log.js";
+import { readSite } from "../site.js";
+
+export interface MaterializeArgs {
+  readonly siteDir: string;
+  readonly contentDir: string;
+  readonly outDir: string;
+  readonly channels: readonly string[];
+  readonly routeBasePath: string;
+  readonly labels: Readonly<Record<string, string>>;
+  readonly check: boolean;
+  readonly clean: boolean;
+  readonly json: boolean;
+  readonly allowErrors: boolean;
+}
+
+export async function materializeCommand(args: MaterializeArgs): Promise<number> {
+  // Imported lazily so `cut` and `check` never load Docusaurus knowledge. A Fumadocs project should not
+  // have to install an adapter it does not use in order to move a folder.
+  const adapter = await import("docs-overlay-docusaurus").catch(() => undefined);
+  if (adapter === undefined) {
+    fail("This command needs the Docusaurus adapter.\n\n  npm install docs-overlay-docusaurus\n");
+    return 1;
+  }
+
+  const diagnostics: Diagnostic[] = [];
+  const site = readSite({
+    contentDir: args.contentDir,
+    channels: args.channels,
+    onDiagnostic: diagnostic => diagnostics.push(diagnostic)
+  });
+
+  const plan = adapter.materialize(site.overlay, {
+    routeBasePath: args.routeBasePath,
+    outDir: args.outDir,
+    labels: args.labels,
+    onDiagnostic: diagnostic => diagnostics.push(diagnostic)
+  });
+
+  // Refused before a single byte is written, and refused rather than adopted: these are the paths a
+  // pre-migration site kept under source control, so writing into an unrecognised one would delete
+  // somebody's committed documentation on the next run.
+  try {
+    assertWritable(args.siteDir, plan.directories);
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
+
+  const files: PlannedFile[] = plan.files.map(file =>
+    file.kind === "copy" ? { path: file.path, bytes: readBytes(file.from), from: file.from } : { path: file.path, bytes: Buffer.from(file.contents, "utf8") }
+  );
+
+  // The docs plugin block travels in the manifest so both of a site's config files read it rather than
+  // each declaring `lastVersion` and `versions` for themselves.
+  const result = reconcile(args.siteDir, args.outDir, plan.directories, files, {
+    check: args.check,
+    clean: args.clean,
+    payload: { docs: plan.docsOptions, versions: plan.versions }
+  });
+
+  if (args.json) {
+    say(JSON.stringify({ ...result, versions: plan.versions, docsOptions: plan.docsOptions, diagnostics: plan.diagnostics }, undefined, 2));
+  } else {
+    const versions = plan.versions.map(version => `${version.id}${version.path === "" ? " (root)" : ` → /${version.path}`}`).join(", ");
+    say(`versions   ${versions}`);
+    say(`files      ${files.length} planned · ${result.written.length} ${args.check ? "would change" : "written"} · ${result.unchanged.length} unchanged`);
+    if (result.removed.length > 0) say(`removed    ${result.removed.length} file(s) a previous run wrote and this one does not`);
+    // The one mistake a Docusaurus contributor will make, because editing `docs/` is muscle memory.
+    // Better a noisy warning than an edit that disappears at the next build without a trace.
+    for (const path of result.tampered) say(`edited by hand, overwritten: ${path} — edit the content directory instead`);
+  }
+
+  const all = [...diagnostics, ...plan.diagnostics];
+  if (all.length > 0 && !args.json) say(`\n${formatDiagnostics(all)}`);
+
+  if (args.check && result.written.length + result.removed.length > 0) {
+    fail(`The generated tree is out of date. Run \`docs-overlay materialize\` (${result.written.length} to write, ${result.removed.length} to remove).`);
+    return 1;
+  }
+  if (hasErrors(all) && !args.allowErrors) {
+    fail("Refusing to finish with content errors. Fix them, or pass --allow-errors.");
+    return 1;
+  }
+  return 0;
+}
+
+/** Where the generated current-version tree lives, for a caller wiring `docs.path`. */
+export const currentDirOf = (outDir: string): string => join(outDir, "current");

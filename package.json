@@ -11,8 +11,10 @@
   "workspaces": [
     "packages/core",
     "packages/adapters/*",
+    "packages/cli",
     "apps/*",
-    "examples/*"
+    "examples/*",
+    "!examples/docusaurus-classic"
   ],
   "scripts": {
     "build": "npm run build -w docs-overlay -w docs-overlay-fumadocs -w docs-overlay-docusaurus",
