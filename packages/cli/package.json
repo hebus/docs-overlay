@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Command line for docs-overlay: cut a release, check content, and materialise a Docusaurus tree.",
   "license": "MIT",
   "author": "Olivier Tomé",
@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
-    "docs-overlay": "^0.1.0",
+    "docs-overlay": "^0.2.0",
     "yaml": "^2.8.0"
   },
   "devDependencies": {

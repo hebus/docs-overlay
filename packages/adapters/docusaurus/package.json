@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-docusaurus",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Docusaurus adapter for docs-overlay: plans the tree Docusaurus insists on reading from disk.",
   "license": "MIT",
   "author": "Olivier Tomé",
@@ -23,7 +23,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "docs-overlay": "^0.1.0"
+    "docs-overlay": "^0.2.0"
   },
   "keywords": [
     "docusaurus",

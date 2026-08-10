@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Framework-agnostic engine for versioned documentation with overlay inheritance.",
   "license": "MIT",
   "author": "Olivier Tomé",
