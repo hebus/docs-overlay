@@ -30,7 +30,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 const ASSUME_YES = process.argv.includes("--yes");
 
 /** Publishable workspaces, in dependency order: every adapter depends on the core. */
-const PACKAGES = ["packages/core", "packages/adapters/fumadocs", "packages/adapters/docusaurus"];
+const PACKAGES = ["packages/core", "packages/adapters/fumadocs", "packages/adapters/docusaurus", "packages/cli"];
 
 interface Manifest {
   readonly name: string;
