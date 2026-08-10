@@ -24,6 +24,37 @@ Derived from every `scriptable: true` entry, grouped by the command that owns it
   ```sh
   node scripts/check-journal.mjs notes/migrations/mint-11.14.0/journal.jsonl --repo /c/dev/mint-release-11.14.0
   ```
+- **29** (build) The adapter's architecture test scans its own sources for forbidden imports and flagged templates.ts for importing @docusaurus/Redirect and @docusaurus/Head. Those imports are inside template literals: they belong to the MDX the stubs emit, and are resolved by the site, not by this package.
+  ```sh
+  npx vitest run packages/adapters/docusaurus
+  ```
+- **30** (build) tsc -p packages/adapters/docusaurus failed on the architecture test with Cannot find name 'node:fs': Node's ambient types are not in that project's scope. Moved the test to packages/adapters/docusaurus/test/ with its own tsconfig declaring types: ["node"], mirroring packages/core/test/, and registered that project in the root typecheck script. npm run typecheck now runs five tsc projects and exits clean.
+  ```sh
+  tsc -p packages/adapters/docusaurus
+  ```
+
+## `materialize`
+
+- **27** (build) Established why the adapter copies pages byte for byte instead of re-emitting their frontmatter: Docusaurus' doc frontmatter Joi schema ends in .unknown() (docusaurus-plugin-content-docs/src/frontMatter.ts), so an overlay: key in a page's frontmatter passes validation untouched. Byte copying is also what preserves CRLF endings, encoding, @theme/Tabs imports and mermaid blocks. Divergence from the briefing worth recording: the schema claim was not re-verified at this instant, because neither /c/dev/docs-overlay nor /c/dev/mint-release-11.14.0 has any @docusaurus package installed; it rests on the earlier reading of the upstream source.
+- **28** (build) Removed generated stubs from the doc-id and directory sets the sidebar merger treats as valid. The first version of the adapter added each generated stub's doc id to docIds, and two failures followed, both caught by tests: an inherited sidebar kept the entry for a page the version had tombstoned, and a renamed page's sidebar reference was never rewritten because the old doc id still looked present. materialize.ts now carries the exclusion and its reason at lines 184-187.
+  ```sh
+  npx vitest run packages/adapters/docusaurus
+  ```
+- **31** (build) Built packages/adapters/docusaurus (docs-overlay commit fe22811: 17 files added, 2 changed, 1490 insertions). materialize() returns a description of files to copy and files to write and performs no I/O itself. Also exported: docusaurusSlugify(), covering the three Docusaurus conventions where a file takes its folder's URL (index, README, and a file named after its own folder, case-insensitively), readDocusaurusDirectives(), withoutOverlayBlock(), pruneMissing(), strictSidebars(), referencesOf(), defaultTemplates, docUrl(), docIdOf() and declaredSlug(). Registered in the root build/typecheck/typecheck:packaged scripts and in the PACKAGES list of scripts/release.ts. Tests: 14 unit tests in src/materialize.test.ts plus architecture tests in test/architecture.test.ts, 18 in total, all filesystem-free except the architecture test, which reads its own package's sources. Divergence from the briefing: there are 4 architecture tests, not 3 -- the fourth is 'declares the core as its only dependency, and no peers'.
+  ```sh
+  npx vitest run packages/adapters/docusaurus --reporter=verbose
+  ```
+- **32** (verify) Ran the adapter against the real migrated tree through notes/migrations/mint-11.14.0/materialize-prototype.ts: 350 entries in, 600 files copied, 22 files written, 10 redirects, zero diagnostics. Versions came out as 11.13.0 -> /11.13.0, 11.14.0 at the root and next -> /next, which is the URL shape the site has today. The output holds 622 files: 168 under versioned_docs/version-11.13.0, 225 under versioned_docs/version-11.14.0, 225 under .docs-overlay/current, 2 versioned sidebars, 1 channel sidebar and versions.json.
+  ```sh
+  npx tsx notes/migrations/mint-11.14.0/materialize-prototype.ts /c/dev/mint-release-11.14.0/docusaurus <out-dir>
+  ```
+
+## `materialize --check`
+
+- **33** (verify) Compared the materialised output against the pre-migration reference snapshot, extracted with git archive 403b6b15 (575 files: docs 216, versioned_docs/version-11.13.0 168, versioned_docs/version-11.14.0 188, versioned_sidebars 2, versions.json 1). 11.13.0 materialised is byte-identical to the original versioned_docs/version-11.13.0 across all 168 files, and versions.json and versioned_sidebars/version-11.13.0-sidebars.json are byte-identical to the originals. 11.14.0 materialised differs from the original docs/ in exactly two intended ways: 9 added files (5 rename stubs and 4 tombstone stubs, so 216 + 9 = 225) and 5 files whose only change is the +2 lines of the overlay: block the migration itself added to the source, with nothing removed. The channel's 225-file tree is identical to 11.14.0's except for the 5 redirect stubs, whose URLs correctly carry /next/ where the root-served version does not. All three generated sidebars are valid for their own version: every doc id resolves to a file that exists (6, 7 and 7 doc ids) and every autogenerated directory exists (20, 24 and 24 blocks). Observation worth keeping: the tombstone for mint/features/search/search landed at mint/features/search/index.mdx, because a file named after its own folder takes the folder's URL -- the third slug convention, firing on real content.
+  ```sh
+  md5sum of every file in each materialised version, diffed against the same listing over the git archive 403b6b15 snapshot, plus a walk of each generated sidebar resolving every doc id and every autogenerated dirName against that version's own docs directory
+  ```
 
 ## `migrate docusaurus`
 

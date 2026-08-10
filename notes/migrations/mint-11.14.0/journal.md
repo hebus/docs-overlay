@@ -2,7 +2,7 @@
 
 Generated from `journal.jsonl` by `scripts/render-journal.mjs`. **Do not edit.**
 
-26 entries across 8 phases. 23 steps a tool could take unattended, 3 that need a human.
+33 entries across 10 phases. 30 steps a tool could take unattended, 3 that need a human.
 
 ## 1. setup — **pitfall**
 
@@ -319,4 +319,98 @@ node scripts/check-journal.mjs notes/migrations/mint-11.14.0/journal.jsonl --rep
 **Detectable by** A journal whose entries all share one repo_head while the migration spans several commits.
 
 <sub>`9fcae372` · 2026-08-10T10:24:29Z</sub>
+
+## 27. build — **pitfall**
+
+Established why the adapter copies pages byte for byte instead of re-emitting their frontmatter: Docusaurus' doc frontmatter Joi schema ends in .unknown() (docusaurus-plugin-content-docs/src/frontMatter.ts), so an overlay: key in a page's frontmatter passes validation untouched. Byte copying is also what preserves CRLF endings, encoding, @theme/Tabs imports and mermaid blocks. Divergence from the briefing worth recording: the schema claim was not re-verified at this instant, because neither /c/dev/docs-overlay nor /c/dev/mint-release-11.14.0 has any @docusaurus package installed; it rests on the earlier reading of the upstream source.
+
+**Pitfall** Had the frontmatter schema been strict instead of .unknown(), stripping the overlay: block would have had to be the default, and every copied page would have become a rewrite -- losing its line endings, encoding and MDX imports as a side effect of a validation rule.
+
+**Workaround** None needed; withoutOverlayBlock() is exported for a caller who would rather not ship the directive to the built site.
+
+**Detectable by** A site build failing with a frontmatter validation error naming overlay.
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · owned by `materialize`</sub>
+
+## 28. build — **pitfall**
+
+Removed generated stubs from the doc-id and directory sets the sidebar merger treats as valid. The first version of the adapter added each generated stub's doc id to docIds, and two failures followed, both caught by tests: an inherited sidebar kept the entry for a page the version had tombstoned, and a renamed page's sidebar reference was never rewritten because the old doc id still looked present. materialize.ts now carries the exclusion and its reason at lines 184-187.
+
+```sh
+npx vitest run packages/adapters/docusaurus
+```
+
+**Pitfall** Counting a stub as a page makes the slug it occupies look alive to the sidebar merger, so pruneMissing() keeps a tombstoned entry and the rename rewrite never fires -- the sidebar then points at a redirect or at an unlisted 'removed in' page instead of the real one.
+
+**Workaround** Stubs are deliberately excluded from docIds and dirNames -- a stub is a route, not a page.
+
+**Detectable by** A sidebar that still names a slug getEntries() reports as deleted or redirect.
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · +0 −0 ~1 · owned by `materialize`</sub>
+
+## 29. build — **pitfall**
+
+The adapter's architecture test scans its own sources for forbidden imports and flagged templates.ts for importing @docusaurus/Redirect and @docusaurus/Head. Those imports are inside template literals: they belong to the MDX the stubs emit, and are resolved by the site, not by this package.
+
+```sh
+npx vitest run packages/adapters/docusaurus
+```
+
+**Pitfall** An architecture check that reads sources as text cannot tell an import from a string that merely contains one, so it reported a violation the package does not commit; exempting the file wholesale would have stopped checking the one module most likely to reach for Docusaurus.
+
+**Workaround** Strip template literals before scanning, plus a second test ('still sees an import that hides outside a template literal') proving the stripper does not swallow a real import sitting outside one -- guarding the guard.
+
+**Detectable by** An architecture check that reports a violation in a file whose only match is inside a string literal.
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · +0 −0 ~1</sub>
+
+## 30. build — **pitfall**
+
+tsc -p packages/adapters/docusaurus failed on the architecture test with Cannot find name 'node:fs': Node's ambient types are not in that project's scope. Moved the test to packages/adapters/docusaurus/test/ with its own tsconfig declaring types: ["node"], mirroring packages/core/test/, and registered that project in the root typecheck script. npm run typecheck now runs five tsc projects and exits clean.
+
+```sh
+tsc -p packages/adapters/docusaurus
+```
+
+**Pitfall** The shorter fix -- adding Node's types to the adapter's src project -- would have put process, Buffer and node:fs in scope for src/, so 'this adapter performs no I/O' would have become a stated intention instead of a checkable claim: a stray readFileSync in src/ would then compile without complaint.
+
+**Workaround** A separate test project declaring types: ["node"], keeping Node's ambient types out of src/ entirely; the root typecheck script runs tsc -p packages/adapters/docusaurus/test alongside the src project.
+
+**Detectable by** npm run typecheck
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · +2 −0 ~1</sub>
+
+## 31. build — mechanical
+
+Built packages/adapters/docusaurus (docs-overlay commit fe22811: 17 files added, 2 changed, 1490 insertions). materialize() returns a description of files to copy and files to write and performs no I/O itself. Also exported: docusaurusSlugify(), covering the three Docusaurus conventions where a file takes its folder's URL (index, README, and a file named after its own folder, case-insensitively), readDocusaurusDirectives(), withoutOverlayBlock(), pruneMissing(), strictSidebars(), referencesOf(), defaultTemplates, docUrl(), docIdOf() and declaredSlug(). Registered in the root build/typecheck/typecheck:packaged scripts and in the PACKAGES list of scripts/release.ts. Tests: 14 unit tests in src/materialize.test.ts plus architecture tests in test/architecture.test.ts, 18 in total, all filesystem-free except the architecture test, which reads its own package's sources. Divergence from the briefing: there are 4 architecture tests, not 3 -- the fourth is 'declares the core as its only dependency, and no peers'.
+
+```sh
+npx vitest run packages/adapters/docusaurus --reporter=verbose
+```
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · +17 −0 ~2 · owned by `materialize`</sub>
+
+## 32. verify — verification
+
+Ran the adapter against the real migrated tree through notes/migrations/mint-11.14.0/materialize-prototype.ts: 350 entries in, 600 files copied, 22 files written, 10 redirects, zero diagnostics. Versions came out as 11.13.0 -> /11.13.0, 11.14.0 at the root and next -> /next, which is the URL shape the site has today. The output holds 622 files: 168 under versioned_docs/version-11.13.0, 225 under versioned_docs/version-11.14.0, 225 under .docs-overlay/current, 2 versioned sidebars, 1 channel sidebar and versions.json.
+
+```sh
+npx tsx notes/migrations/mint-11.14.0/materialize-prototype.ts /c/dev/mint-release-11.14.0/docusaurus <out-dir>
+```
+
+**Verified** `npx tsx notes/migrations/mint-11.14.0/materialize-prototype.ts /c/dev/mint-release-11.14.0/docusaurus <out-dir>  # run twice into two different out-dirs, comparing the digest it prints` → expected two consecutive runs into two separate output directories print the same digest, and neither run reports a diagnostic, got Both runs printed the digest 4e5e7f49b51c1f59, so the output is deterministic. Both reported 350 entries, 600 copied, 22 written, 10 redirects, and printed no diagnostic line.
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · owned by `materialize`</sub>
+
+## 33. verify — verification
+
+Compared the materialised output against the pre-migration reference snapshot, extracted with git archive 403b6b15 (575 files: docs 216, versioned_docs/version-11.13.0 168, versioned_docs/version-11.14.0 188, versioned_sidebars 2, versions.json 1). 11.13.0 materialised is byte-identical to the original versioned_docs/version-11.13.0 across all 168 files, and versions.json and versioned_sidebars/version-11.13.0-sidebars.json are byte-identical to the originals. 11.14.0 materialised differs from the original docs/ in exactly two intended ways: 9 added files (5 rename stubs and 4 tombstone stubs, so 216 + 9 = 225) and 5 files whose only change is the +2 lines of the overlay: block the migration itself added to the source, with nothing removed. The channel's 225-file tree is identical to 11.14.0's except for the 5 redirect stubs, whose URLs correctly carry /next/ where the root-served version does not. All three generated sidebars are valid for their own version: every doc id resolves to a file that exists (6, 7 and 7 doc ids) and every autogenerated directory exists (20, 24 and 24 blocks). Observation worth keeping: the tombstone for mint/features/search/search landed at mint/features/search/index.mdx, because a file named after its own folder takes the folder's URL -- the third slug convention, firing on real content.
+
+```sh
+md5sum of every file in each materialised version, diffed against the same listing over the git archive 403b6b15 snapshot, plus a walk of each generated sidebar resolving every doc id and every autogenerated dirName against that version's own docs directory
+```
+
+**Verified** `md5sum comparison of each materialised version against the 403b6b15 snapshot, plus a walk of each generated sidebar resolving every doc id and autogenerated dirName against that version's own docs directory` → expected every deviation from the reference snapshot is one the migration intended, and each sidebar is valid for the version it belongs to, got Every deviation is accounted for: 168 of 168 files byte-identical for 11.13.0, versions.json and version-11.13.0-sidebars.json byte-identical, 9 added stubs and 5 overlay-block-only changes for 11.14.0, 5 /next/-scoped redirect stubs for the channel, and zero unresolved doc ids and zero missing autogenerated directories across all three sidebars. The shared-sidebar failure this check exists to catch was reproduced: applying 11.14.0's sidebar to 11.13.0's docs leaves 4 distinct autogenerated directories missing (atomic/examples, atomic/changelogs, atomic-angular/composables; 6 occurrences in total).
+
+<sub>`9fcae372` · 2026-08-10T11:04:52Z · +9 −0 ~5 · owned by `materialize --check`</sub>
 
