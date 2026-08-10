@@ -56,6 +56,10 @@ Derived from every `scriptable: true` entry, grouped by the command that owns it
   ```sh
   grep -ic lock SECURITY-NOTES.md; grep -c brace-expansion SECURITY-NOTES.md
   ```
+- **55** (build) Corrected the cause stated in entries 51 and 52. Both said `git add` renormalises a CRLF file to LF because .gitattributes declares `text=auto eol=lf`, and that this is why docusaurus/package-lock.json produced a 21130/21023-line diff for a 108-line change. Measured directly, it does not: staging an edited file that is already i/crlf in the index leaves it i/crlf and shows 0 insertions / 1 deletion. text=auto converts on the way in only for a path new to the index, so a tracked CRLF file keeps its CRLF through any number of edits. The real cause is simpler and belongs to npm: `npm install --package-lock-only` rewrote the whole file with LF terminators in the working tree, and git stored the bytes that were there. The same measurement is what made the 112-file frontmatter edit safe to stage in one go -- verified on a CRLF file among them, 0/1 with the index still i/crlf. The conclusion of entry 52 survives its wrong premise: storing LF matches the eol=lf every checkout already produces and is what stops the churn, whereas forcing CRLF back with hash-object --no-filters would hand the same 21000-line diff to whoever regenerates the file next.
+  ```sh
+  git add <a modified i/crlf file>; git diff --cached --numstat -- <it>; git ls-files --eol -- <it>
+  ```
 
 ## `materialize`
 

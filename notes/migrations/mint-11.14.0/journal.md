@@ -2,7 +2,7 @@
 
 Generated from `journal.jsonl` by `scripts/render-journal.mjs`. **Do not edit.**
 
-54 entries across 11 phases. 49 steps a tool could take unattended, 5 that need a human.
+55 entries across 11 phases. 50 steps a tool could take unattended, 5 that need a human.
 
 ## 1. setup — **pitfall**
 
@@ -669,4 +669,22 @@ grep -ic lock SECURITY-NOTES.md; grep -c brace-expansion SECURITY-NOTES.md
 ```
 
 <sub>`071e2411` · 2026-08-10T14:20:00Z</sub>
+
+## 55. build — **pitfall**
+
+Corrected the cause stated in entries 51 and 52. Both said `git add` renormalises a CRLF file to LF because .gitattributes declares `text=auto eol=lf`, and that this is why docusaurus/package-lock.json produced a 21130/21023-line diff for a 108-line change. Measured directly, it does not: staging an edited file that is already i/crlf in the index leaves it i/crlf and shows 0 insertions / 1 deletion. text=auto converts on the way in only for a path new to the index, so a tracked CRLF file keeps its CRLF through any number of edits. The real cause is simpler and belongs to npm: `npm install --package-lock-only` rewrote the whole file with LF terminators in the working tree, and git stored the bytes that were there. The same measurement is what made the 112-file frontmatter edit safe to stage in one go -- verified on a CRLF file among them, 0/1 with the index still i/crlf. The conclusion of entry 52 survives its wrong premise: storing LF matches the eol=lf every checkout already produces and is what stops the churn, whereas forcing CRLF back with hash-object --no-filters would hand the same 21000-line diff to whoever regenerates the file next.
+
+```sh
+git add <a modified i/crlf file>; git diff --cached --numstat -- <it>; git ls-files --eol -- <it>
+```
+
+**Pitfall** Believing that `text=auto eol=lf` makes `git add` renormalise any CRLF file. It does not touch a path already in the index as CRLF, so a huge EOL diff on a tracked file means something rewrote the file, not that git converted it -- and the difference decides whether you go looking for a git workaround or for the tool that did the rewriting.
+
+**Workaround** Measure before concluding: stage the file and read `git diff --cached --numstat` together with `git ls-files --eol`. If the index side is unchanged, git did nothing and the generator is responsible. hash-object --no-filters + update-index is only needed when git really would convert, which is when the path is new to the index.
+
+**Detectable by** `git ls-files --eol <path>` before and after `git add`: the i/ column not moving proves git applied no conversion. A numstat of 0/1 on an edit that removed one line proves the same thing from the other side.
+
+**Verified** `git add on one modified i/crlf content file and one i/lf one, then git diff --cached --numstat and git ls-files --eol on each, then git restore --staged` → expected if text=auto renormalised on add, the CRLF file would show a whole-file diff and flip to i/lf, got both files showed 0 insertions / 1 deletion; the CRLF one stayed i/crlf w/crlf and the LF one i/lf w/lf. No conversion took place.
+
+<sub>`ed79b400` · 2026-08-10T14:52:00Z</sub>
 
