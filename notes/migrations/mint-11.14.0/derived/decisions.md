@@ -22,3 +22,9 @@ mint/search-all-layout covers the same component and survives by inheritance, bu
 
 **Options not taken** `replacedBy: mint/search-all-layout`
 
+## 39. Remove `baseUrl` from the adapter entirely and let generated pages resolve it with `useBaseUrl` at build time, rather than baking an absolute URL in at generation time.
+
+This site has two deployment targets with different baseUrl values. A baked-in URL means one materialisation per target -- 18 files rewritten on every switch -- and `materialize --check` in CI would then depend on which target ran last, so the same source tree would pass or fail depending on build order.
+
+**Options not taken** `Keep `--base-url` and materialise once per deployment target` · `Generate relative links instead of site-root-relative paths`
+

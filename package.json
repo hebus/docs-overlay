@@ -35,7 +35,10 @@
     "build:example": "npm run build -w docs-overlay-example",
     "build:example:multi": "npm run build -w docs-overlay-example-multi",
     "build:docs": "npm run build -w docs-overlay-site",
-    "release:dry": "tsx scripts/release.ts --dry-run"
+    "release:dry": "tsx scripts/release.ts --dry-run",
+    "check:journal": "node scripts/check-journal.mjs",
+    "check:coverage": "node scripts/check-coverage.mjs",
+    "render:journal": "node scripts/render-journal.mjs"
   },
   "devDependencies": {
     "@changesets/changelog-git": "^0.2.1",
