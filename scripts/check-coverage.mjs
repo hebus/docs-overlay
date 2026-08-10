@@ -9,22 +9,78 @@
 // that nothing was quietly left out.
 //
 // Usage: node scripts/check-coverage.mjs [notes/migrations/<name>/journal.jsonl]
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const journalPath = process.argv[2] ?? join(root, "notes", "migrations", "mint-11.14.0", "journal.jsonl");
+const content = join(root, "apps", "docs", "content", "docs");
 
-// Where the derived material is supposed to have landed. A journal entry counts as covered when its subject
-// is discussed in any of these — one page may reasonably absorb several entries.
-const PAGES = [
-  join(root, "apps", "docs", "content", "docs", "next", "staying-on-docusaurus.md"),
-  join(root, "apps", "docs", "content", "docs", "next", "migrating-to-fumadocs.md"),
-  join(root, "apps", "docs", "content", "docs", "next", "adapters.md"),
-  join(root, "packages", "cli", "README.md"),
-  join(root, "packages", "adapters", "docusaurus", "README.md")
-];
+/**
+ * Guide pages, named **without a version**, because the version they live in moves.
+ *
+ * The first version of this script hardcoded `next/…`, and `cut-docs.mjs` broke it on the very next
+ * release: cutting renames `next/` to the engine's new version, so the guides moved to `0.2.0/` and every
+ * path here stopped existing. Hardcoding a version folder in a repository whose whole subject is that
+ * version folders move was a poor choice, and CI caught it on the "chore: version packages" branch.
+ *
+ * Each name resolves to the newest version that serves it. Newest rather than "any", because coverage is
+ * about what the documentation says *now*: a term surviving only in an archived version means the current
+ * documentation dropped it, which is exactly what this check is for.
+ */
+const GUIDES = ["staying-on-docusaurus.md", "migrating-to-fumadocs.md", "adapters.md"];
+
+/** Pages outside the versioned tree, whose paths do not move. */
+const FIXED = [join(root, "packages", "cli", "README.md"), join(root, "packages", "adapters", "docusaurus", "README.md")];
+
+/**
+ * Just enough version ordering to pick the newest folder, hand-written for the same reason
+ * `cut-docs.mjs` duplicates its version regex: these scripts run before anything is built, so there is no
+ * `dist/` to import the engine's comparator from.
+ *
+ * Channels — folders that are not version numbers, such as `next` — sort last, matching the engine.
+ */
+const VERSION = /^v?(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:-([0-9A-Za-z.-]+))?$/;
+
+function versionRank(name) {
+  const match = VERSION.exec(name);
+  if (match === null) return undefined;
+  // A prerelease ranks below the release of the same number, hence the trailing 0/1.
+  return [Number(match[1] ?? 0), Number(match[2] ?? 0), Number(match[3] ?? 0), match[4] === undefined ? 1 : 0];
+}
+
+function orderedVersions() {
+  if (!existsSync(content)) return [];
+  const folders = readdirSync(content).filter(name => statSync(join(content, name)).isDirectory());
+  const releases = folders.filter(name => versionRank(name) !== undefined);
+  const channels = folders.filter(name => versionRank(name) === undefined);
+
+  releases.sort((a, b) => {
+    const left = versionRank(a);
+    const right = versionRank(b);
+    for (let index = 0; index < 4; index += 1) if (left[index] !== right[index]) return left[index] - right[index];
+    return a.localeCompare(b);
+  });
+
+  // Oldest first, channels last, so the newest thing is the end of the list either way.
+  return [...releases, ...channels];
+}
+
+const versions = orderedVersions();
+
+/** Newest version folder serving `name`, or `undefined` when no version does. */
+function newestServing(name) {
+  for (const version of [...versions].reverse()) {
+    const path = join(content, version, name);
+    if (existsSync(path)) return { version, path };
+  }
+  return undefined;
+}
+
+const resolved = GUIDES.map(name => ({ name, found: newestServing(name) }));
+const unresolved = resolved.filter(entry => entry.found === undefined);
+const PAGES = [...resolved.filter(entry => entry.found !== undefined).map(entry => entry.found.path), ...FIXED];
 
 /**
  * Terms that must appear somewhere in the documentation for an entry to count as covered.
@@ -66,7 +122,15 @@ const entries = readFileSync(journalPath, "utf8")
   .filter(line => line.trim() !== "")
   .map(line => JSON.parse(line));
 
-const missingPages = PAGES.filter(page => !existsSync(page));
+// A guide no version serves at all has been deleted, which is a real failure. Name the versions searched,
+// so the answer is not "it is missing" when the truth is "you are looking in the wrong place".
+if (unresolved.length > 0) {
+  console.error(`check-coverage: no version under ${content.replace(root, "")} serves:\n  ${unresolved.map(entry => entry.name).join("\n  ")}`);
+  console.error(`  versions searched, oldest first: ${versions.join(", ") || "(none)"}`);
+  process.exit(1);
+}
+
+const missingPages = FIXED.filter(page => !existsSync(page));
 if (missingPages.length > 0) {
   console.error(`check-coverage: these pages do not exist:\n  ${missingPages.map(page => page.replace(root, "")).join("\n  ")}`);
   process.exit(1);
@@ -110,6 +174,9 @@ const covered = Object.keys(REQUIRED).filter(seq => known.has(Number(seq))).leng
 
 console.log(`check-coverage: ${entries.length} entries · ${judgements} judgement(s) · ${pitfalls} pitfall(s)`);
 console.log(`  ${covered} entr${covered === 1 ? "y" : "ies"} required to appear in the documentation, across ${PAGES.length} page(s)`);
+// Printed on success too: this is the line that shows a release cut moved the guides and that the check
+// followed them, rather than silently reading an older copy.
+for (const entry of resolved) console.log(`  ${entry.name.padEnd(28)} from ${entry.found.version}`);
 if (orphans.length > 0) console.log(`  note: coverage declared for ${orphans.join(", ")}, which the journal does not contain`);
 
 if (problems.length > 0) {
