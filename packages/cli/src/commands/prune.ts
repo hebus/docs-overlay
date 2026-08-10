@@ -91,10 +91,16 @@ export function pruneCommand(args: PruneArgs): number {
     for (const entry of redundant) byVersion.set(entry.version, (byVersion.get(entry.version) ?? 0) + 1);
     say(`${redundant.length} file(s) identical to what they inherit:`);
     for (const [version, count] of byVersion) say(`  ${version}  ${count}`);
-    for (const entry of redundant) say(`  ${args.dryRun ? "would remove" : "removed"}  ${entry.path}  (inherits ${entry.inheritedFrom})`);
+    // Listed without a verb: this is what was *found*. Saying "removed" here would be a lie whenever the
+    // removal below fails — `git rm` refuses a file with staged or local changes, which is exactly the state
+    // a migration is in when it prunes.
+    for (const entry of redundant) say(`  ${entry.path}  (inherits ${entry.inheritedFrom})`);
   }
 
-  if (args.dryRun || redundant.length === 0) return 0;
+  if (args.dryRun || redundant.length === 0) {
+    if (args.dryRun && redundant.length > 0) say(`\nnothing removed: --dry-run.`);
+    return 0;
+  }
 
   const paths = redundant.map(entry => join(args.contentDir, entry.version, restOf(entry.path)));
   if (args.useGit) {
@@ -103,14 +109,19 @@ export function pruneCommand(args: PruneArgs): number {
     try {
       execFileSync("git", ["rm", "-q", "--", ...paths], { stdio: "inherit" });
     } catch {
-      fail("`git rm` failed. Re-run with --no-git to remove the files without staging them.");
+      fail(
+        "`git rm` failed, and nothing was removed.\n\n" +
+          "It refuses a file that has staged or local changes — the usual state mid-migration. Commit what\n" +
+          "you have and run this again, or use --no-git to unlink the files without staging the removal.\n"
+      );
       return 1;
     }
   } else {
     for (const path of paths) if (existsSync(path)) unlinkSync(path);
   }
 
-  say(`\nthose slugs are now served by inheritance. Run \`docs-overlay check\` to confirm nothing else moved.`);
+  say(`\nremoved ${paths.length} file(s); those slugs are now served by inheritance.`);
+  say(`Run \`docs-overlay check\` to confirm nothing else moved.`);
   return 0;
 }
 

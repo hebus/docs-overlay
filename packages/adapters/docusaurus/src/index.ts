@@ -7,6 +7,8 @@
  * `@docusaurus/*` package installed in order to typecheck against this one.
  */
 
+export type { ChangeClassNames, VersionChanges } from "./changes.js";
+export { annotateSidebars } from "./changes.js";
 export type { WithFrontMatter } from "./directives.js";
 export { readDocusaurusDirectives, withoutOverlayBlock } from "./directives.js";
 export type { DocusaurusMeta, DocsPluginOptions, DocusaurusVersion, Materialization, MaterializedFile, MaterializeOptions } from "./materialize.js";

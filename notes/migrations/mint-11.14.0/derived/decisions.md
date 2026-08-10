@@ -28,3 +28,9 @@ This site has two deployment targets with different baseUrl values. A baked-in U
 
 **Options not taken** `Keep `--base-url` and materialise once per deployment target` · `Generate relative links instead of site-root-relative paths`
 
+## 52. Normalise the lockfile to LF in the index rather than preserving its CRLF with `hash-object --no-filters` + `update-index`.
+
+`eol=lf` means every checkout is LF and npm writes LF, so normalising stops the churn once and for all, whereas preserving CRLF defers an identical 21000-line diff to whoever next regenerates the file -- and they will not have chosen it. The cost is one unreviewable diff, paid down by isolating the lockfile in its own commit and giving the `tr -d '\r'` recipe to read it.
+
+**Options not taken** `Preserve the index's CRLF with `git hash-object --no-filters` + `git update-index`, keeping a 108-line reviewable diff and leaving the renormalisation for whoever regenerates the file next` · `Renormalise every CRLF-in-index file in the repository in one dedicated commit, root package-lock.json included, so the policy and the index agree everywhere at once`
+
