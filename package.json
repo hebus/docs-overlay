@@ -2,8 +2,14 @@
   "name": "docs-overlay",
   "private": true,
   "type": "module",
-  "description": "Versioned documentation with overlay inheritance — framework-agnostic core plus framework adapters.",
+  "description": "Version your documentation without duplicating it — framework-agnostic engine, Fumadocs and Docusaurus adapters, and one command line.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hebus/docs-overlay.git"
+  },
+  "homepage": "https://hebus.github.io/docs-overlay",
+  "bugs": "https://github.com/hebus/docs-overlay/issues",
   "packageManager": "npm@11.3.0",
   "engines": {
     "node": ">=20"

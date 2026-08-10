@@ -1,73 +1,120 @@
 # docs-overlay
 
-Versioned documentation where you author only the **diff** between versions.
+**Version your documentation without duplicating it.** Author only the diff between versions — the
+engine resolves the rest.
 
-The oldest version folder holds the complete tree. Every newer version contains only what
-actually changed — an override, a new page, a rename, or a tombstone. Everything else is
-inherited. Cutting a release becomes:
+[![docs-overlay on npm](https://img.shields.io/npm/v/docs-overlay?label=docs-overlay&color=cb3837)](https://www.npmjs.com/package/docs-overlay)
+[![CI](https://github.com/hebus/docs-overlay/actions/workflows/pull-request.yml/badge.svg?branch=main)](https://github.com/hebus/docs-overlay/actions/workflows/pull-request.yml)
+[![core dependencies](https://img.shields.io/badge/core%20dependencies-0-brightgreen)](packages/core/package.json)
+[![types included](https://img.shields.io/npm/types/docs-overlay)](packages/core)
+[![licence MIT](https://img.shields.io/npm/l/docs-overlay?color=blue)](LICENSE)
+[![documentation](https://img.shields.io/badge/docs-hebus.github.io-blue)](https://hebus.github.io/docs-overlay)
+
+[Documentation](https://hebus.github.io/docs-overlay) · [Authoring](https://hebus.github.io/docs-overlay/docs/authoring/) ·
+[Why not duplicate?](#why-not-duplicate-your-docs) · [npm](https://www.npmjs.com/package/docs-overlay)
+
+Every documentation framework versions by snapshot: cutting a release copies the whole tree. From then
+on a typo present in four versions takes four edits or survives in three of them, a reviewer cannot see
+what actually changed between two releases, and the repository grows by one full tree per release.
+
+`docs-overlay` inverts that. The oldest version folder holds the complete tree; every newer folder holds
+**only what it changed** — an override, a new page, a rename, a tombstone. Everything else is inherited,
+resolved at build time.
+
+## The 30-second version
+
+```text
+Snapshot versioning                     docs-overlay
+
+docs/                                   content/docs/
+├── v1/                                 ├── v1/          the complete tree
+│   ├── intro.md                        │   ├── intro.md
+│   ├── guide.md                        │   ├── guide.md
+│   └── api.md                          │   └── api.md
+├── v2/                                 ├── v2/          only what changed
+│   ├── intro.md   ← identical copy     │   └── guide.md
+│   ├── guide.md                        │
+│   └── api.md     ← identical copy     │
+└── v3/                                 └── v3/          only what changed
+    ├── intro.md   ← identical copy         └── api.md
+    ├── guide.md   ← identical copy
+    └── api.md
+```
+
+`v2` serves `intro` and `api` by inheriting them from `v1`. `v3` serves `intro` from `v1` and `guide`
+from `v2`. Nothing is copied, so nothing can drift apart.
+
+Resolution is a walk up the chain, and it stops at the nearest version that owns the file:
+
+```text
+resolve("v3", "intro")
+
+  v3/intro.md      not here
+  v2/intro.md      not here
+  v1/intro.md      served — and the page can say "Unchanged since v1"
+```
+
+Cutting the next release is one command, and it moves a folder rather than copying a tree:
 
 ```bash
-git mv content/docs/next content/docs/11.15.0 && mkdir content/docs/next
+docs-overlay cut 2.0.0
 ```
 
-That is a **zero-byte content diff** (git detects the renames), against ~190 copied files for a
-snapshot-based versioning tool.
+On the real 216-page site this was built for, migrating two releases onto an overlay took **575 tracked
+files down to 351** — 39% fewer — and the cut itself was 216 renames that git recorded at R100, with
+**zero insertions and zero deletions**. The emptied channel folder inherits everything again.
 
-## Packages
+## Why docs-overlay?
 
-| Package                                                   | Role                                                                                                                       |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [`docs-overlay`](packages/core)                           | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
-| [`docs-overlay-fumadocs`](packages/adapters/fumadocs)     | Fumadocs / Next.js adapter. Re-projects a source the framework already read.                                               |
-| [`docs-overlay-docusaurus`](packages/adapters/docusaurus) | Docusaurus adapter. Plans the tree Docusaurus insists on reading from disk.                                                |
-| [`docs-overlay-cli`](packages/cli)                        | The one command line: `cut`, `check`, `prune`, `materialize`.                                                              |
+- **One copy of each page.** A fix lands once, in the version that owns the file, and every version
+  inheriting it gets the fix.
+- **The diff is the release note.** `git diff` between two version folders is exactly what changed for
+  readers, with nothing to read past.
+- **Cutting a release is cheap.** A folder rename. No snapshot to review, no `versions.json` to bump.
+- **Removals explain themselves.** A tombstone can carry `replacedBy`, so an old URL gets an
+  explanation instead of a 404, and a renamed page keeps a permanent redirect.
+- **Nothing to keep in sync.** The list of versions _is_ the list of folders.
+- **The core is framework-agnostic.** Zero dependencies, no Node built-ins, ESM. Frameworks are
+  adapters on top of it.
 
-Adapters depend on the core, never the reverse. Adding support for another framework means
-writing an adapter — it must never require a change to the core.
+## Works with your framework
 
-Neither adapter touches the filesystem: the Fumadocs one because the framework does the reading, the
-Docusaurus one because the CLI does the writing. That keeps I/O in one module, which is what lets an
-adapter be tested without a disk and puts every rule about not destroying somebody's files in one place.
-
-## Authoring convention
-
-Versions are **top-level folders** under the content root. There is no `versions.json` to
-maintain: the list of versions _is_ the list of folders, ordered by semver, with declared
-non-semver folders (`next`) sorted last.
-
-```
-content/docs/
-  1.0.0/                     complete tree, frozen
-    guide/intro.md
-    guide/old-api.md
-  3.0.0/                     differences only
-    guide/intro.md               override
-    guide/new-api.md             overlay: { renamedFrom: guide/old-api }
-    guide/legacy.md              overlay: { deleted: true, replacedBy: guide/new-api }
-  next/                      work in progress
+```text
+                          docs-overlay
+                    framework-agnostic core
+                       zero dependencies
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+ docs-overlay-          docs-overlay-           your adapter
+   fumadocs               docusaurus                  │
+        │                      │                      │
+    Fumadocs              Docusaurus         Astro, VitePress, a script…
 ```
 
-Resolution order for `next` is `next → 3.0.0 → 1.0.0`. All four editing operations are expressed
-**in the version that introduces them**, so a published version folder is never touched again:
+| Your setup         | Install                                                                                                         | How it works                                                                                                                                                   |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fumadocs / Next.js | `docs-overlay` + [`docs-overlay-fumadocs`](packages/adapters/fumadocs)                                          | Re-projects the source Fumadocs already read. One `loader()` serves every version. Nothing is written to disk.                                                 |
+| Docusaurus         | `docs-overlay` + [`docs-overlay-docusaurus`](packages/adapters/docusaurus) + [`docs-overlay-cli`](packages/cli) | The adapter _plans_ the snapshot tree Docusaurus insists on reading; the CLI writes it as a prebuild step. URLs come out identical to a plain Docusaurus site. |
+| Anything else      | `docs-overlay`                                                                                                  | The engine answers `(version, slug)` questions and knows nothing about frameworks. Writing an adapter never requires a change to the core.                     |
+| Just the plumbing  | [`docs-overlay-cli`](packages/cli)                                                                              | `cut`, `check` and `prune` work on any repository that follows the folder convention.                                                                          |
 
-| Operation     | How                                                                                                             |
-| ------------- | --------------------------------------------------------------------------------------------------------------- |
-| add a page    | the new file                                                                                                    |
-| change a page | the new file                                                                                                    |
-| rename a page | `overlay: { renamedFrom: "guide/old-api" }` on the new file                                                     |
-| delete a page | a **tombstone**: a file at the same path, in the version that removes it, carrying `overlay: { deleted: true }` |
+> **Not supported in `0.x`: i18n on top of versions.** Fumadocs' `i18n.parser: "dir"` claims the same
+> first path segment as the version, and Docusaurus keys its translations by version. Neither
+> combination is folded yet.
 
-The deletion version is derived from the tombstone's own path, so there is no version string to
-write and nothing that can drift. `grep -rl 'deleted: true' content/docs/3.0.0/` lists exactly
-what disappears in that release.
+## Install
 
-## Fumadocs usage
+### Fumadocs / Next.js
+
+```bash
+npm install docs-overlay docs-overlay-fumadocs
+```
 
 > [!IMPORTANT]
-> **`pageSchema` is a zod object in `strip` mode**, so an `overlay:` key in frontmatter is
-> silently dropped before it reaches `page.data`. You must widen the schema with `withOverlay()`.
-> Skip this and everything appears to work — except that no directive has any effect, with no
-> error to explain why.
+> **`pageSchema` is a zod object in `strip` mode**, so an `overlay:` key in frontmatter is silently
+> dropped before it reaches `page.data`. Widen the schema with `withOverlay()`. Skip this and everything
+> appears to work — except that no directive has any effect, with no error to explain why.
 
 ```ts
 // source.config.ts
@@ -93,111 +140,224 @@ export const overlay = overlaySource({
   source: docs.toFumadocsSource(),
   baseUrl: "/docs",
   channels: ["next"],
-  // `/docs/...` is the newest release, `/docs/11.13.0/...` an older one.
+  // `/docs/...` is the newest release, `/docs/1.0.0/...` an older one.
   latestAtRoot: true,
   labels: { next: "Next 🚧" }
 });
 
-export const source = loader({
-  baseUrl: "/docs",
-  source: overlay.source,
-  url: overlay.url
-});
+export const source = loader({ baseUrl: "/docs", source: overlay.source, url: overlay.url });
 ```
 
-```tsx
-// app/docs/[[...slug]]/page.tsx
-import { resolveRoute, staticParams } from "docs-overlay-fumadocs";
-import { overlay, source } from "@/lib/source";
+The catch-all route — `resolveRoute()` and its four outcomes, and why `generateStaticParams()` must use
+`staticParams(overlay)` — is in the [adapter's readme](packages/adapters/fumadocs#readme). The complete
+file that compiles is [`examples/fumadocs-next/app/docs/[[...slug]]/page.tsx`](examples/fumadocs-next/app/docs).
 
-export default async function Page(props: { params: Promise<{ slug?: string[] }> }) {
-  const route = resolveRoute(overlay, (await props.params).slug);
+### Docusaurus
 
-  if (route.kind === "not-found") notFound();
-  if (route.kind === "redirect") return <Redirecting to={route.to} />;
-  if (route.kind === "gone") return <Removed {...route} />;
+```bash
+npm install -D docs-overlay docs-overlay-cli docs-overlay-docusaurus
+```
 
-  const page = source.getPage(route.slugs);
-  // ...render as usual
-}
-
-export function generateStaticParams() {
-  // Not `source.generateParams()`: that knows only pages, and it keeps the version segment even
-  // where the URL drops it. `staticParams()` also covers aliases, old slugs and removed pages.
-  return staticParams(overlay);
+```json
+{
+  "scripts": {
+    "materialize": "docs-overlay materialize",
+    "verify": "docs-overlay materialize --check",
+    "prebuild": "npm run materialize",
+    "prestart": "npm run materialize"
+  }
 }
 ```
 
-The version is the first slug segment, so one `loader()` serves every version: the page tree, the
-search index and `generateParams()` all stay coherent, and a relative link such as `./b.md` resolves
-inside the version it was written in.
+You edit `content/docs/`; `docs/`, `versioned_docs/`, `versioned_sidebars/` and `versions.json` become
+build output. Put `docs-overlay materialize --check` in CI — it turns an edit made in the generated tree
+into a failed build instead of an edit that disappears without a trace. The full walkthrough is
+[Versioning Docusaurus documentation without snapshots](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/).
 
-## Development
-
-```bash
-npm ci
-npm run build                # both packages: vite (esm) + tsc (d.ts)
-npm test                     # vitest, core + adapter
-npm run lint                 # oxlint
-npm run fmt:check            # oxfmt
-npm run typecheck            # per package, against core sources
-npm run typecheck:packaged   # adapter against the BUILT core d.ts — validates `exports`
-npm run verify:independence  # packs the core and runs it with no node_modules at all
-npm run build:example        # the example site, plus its end-to-end assertions
-npm run build:docs           # the documentation site
-```
-
-## Releasing
-
-Changesets accumulate on `main`, and the `release-pr` workflow keeps a
-"chore: version packages" pull request up to date. Merging it bumps the versions and writes the
-changelogs.
-
-**That pull request also cuts the documentation.** `changeset:version` runs `scripts/cut-docs.mjs`,
-which turns `apps/docs/content/docs/next/` into a folder named after the engine's new version and
-empties the channel — as renames, so the content diff is zero bytes. Nothing to do by hand, and the
-result is reviewed in the pull request along with the bump. It cuts nothing when the engine's version is
-unchanged, which is the normal case for a release of the adapter alone; it says which of the two
-happened.
-
-Publishing is then done **locally**, so the tarball that reaches npmjs is the one verified on a real
-machine and no long-lived npm token has to live in CI:
+### Any other framework
 
 ```bash
-npm run release
+npm install docs-overlay
 ```
 
-It refuses a dirty tree, and refuses to publish a package whose own files changed after its version was
-set — so what reaches npm is always the tree its changelog describes. Beyond that it skips any version
-already on npmjs, re-runs the packaging and independence checks before publishing, and pushes one git
-tag per package. Running it twice is harmless; `npm run release:dry` runs every check and publishes
-nothing.
+```ts
+import { createOverlay } from "docs-overlay";
 
-Every change to a published package needs a changeset (`npx changeset`, or write
-`.changeset/<name>.md` by hand); the `changeset-check` workflow blocks the PR otherwise. Put
-`#skip-changeset` in the PR title for docs- or CI-only changes.
+const overlay = createOverlay({ source: entries, channels: ["next"] });
+const outcome = overlay.resolve("2.0.0", ["guide", "intro"]);
+// → { kind: "inherited", definedIn: "1.0.0", ... } | "own" | "alias" | "redirect" | "deleted" | "missing"
+```
+
+See [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/).
+
+## Author the diff
+
+Versions are **top-level folders** under the content root, ordered by semver, with declared non-semver
+folders — channels such as `next` — sorted last. There is no `versions.json` to maintain.
+
+```text
+content/docs/
+  1.0.0/                     the complete tree, frozen for good
+    guide/intro.md
+    guide/old-api.md
+    api/index.md                 overlay: { aliases: api-reference }
+  3.0.0/                     differences only
+    guide/intro.md               an override — no directive; the file itself is the diff
+    guide/new-api.md             overlay: { renamedFrom: guide/old-api }
+    guide/legacy.md              overlay: { deleted: true, replacedBy: guide/new-api }
+  next/                      work in progress — empty here, so it inherits everything
+```
+
+Every directive lives in the YAML frontmatter under a single `overlay:` key, never in a filename, and
+always in the version that _introduces_ the change:
+
+| Operation           | How                                                                                                                | What readers get                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| add / change a page | the file itself, no directive                                                                                      | the new content, from that version on                                        |
+| rename a page       | `overlay: { renamedFrom: guide/old-api }` on the **new** file                                                      | a permanent redirect from the old slug, inherited forward                    |
+| delete a page       | a file at the deleted slug, in the version that removes it: `overlay: { deleted: true, replacedBy: guide/modern }` | an explanation instead of a 404. Add `recursive: true` for the whole subtree |
+| re-add a page       | put the file back; there is no special case                                                                        | the page again                                                               |
+| alias a page        | `overlay: { aliases: api-reference }` — a string or a list                                                         | a second URL with a canonical. An alias never shadows a page                 |
+
+Priority inside a version is fixed, so "I renamed onto a slug that already exists" has one answer:
+
+```text
+own file  >  tombstone  >  rename/redirect  >  alias  >  inherited
+```
+
+## Published versions are never touched again
+
+```text
+1.0.0 ──────────── the complete tree
+        │
+        └── 2.0.0 ──── changes only
+                         │
+                         └── 3.0.0 ──── changes only
+```
+
+Because a directive lives in the version that introduces it, a published folder is finished. The
+deletion version is derived from the tombstone's own path, so there is no version string to write and
+nothing that can drift; cutting `3.0.0` cannot modify `1.0.0`; and the release is auditable with one
+command:
+
+```bash
+grep -rl 'deleted: true' content/docs/2.0.0/     # exactly what disappears in that release
+```
+
+The cost on the other side is worth naming: editing a file in an old version changes what every version
+inheriting it serves. `docs-overlay check` lists what a version serves by inheritance, which is worth a
+CI job of its own.
+
+## The command line
+
+```text
+docs-overlay cut <version>      the channel folder becomes that version   (git mv, so the diff is renames)
+docs-overlay check              the engine's diagnostics, with no framework build
+docs-overlay prune              drop files a version repeats byte for byte from what it inherits
+docs-overlay materialize        write the tree Docusaurus reads           (needs docs-overlay-docusaurus)
+```
+
+`cut` and `prune` take `--dry-run`. `check` and `prune` take `--json`, for CI. `materialize --check`
+writes nothing and exits non-zero when the generated tree is stale. `materialize` loads the Docusaurus
+adapter through a lazy `import()`, so a Fumadocs project that installs the CLI to move a folder never
+pulls Docusaurus knowledge in.
+
+> The first invocation is `npx docs-overlay-cli`, **not** `npx docs-overlay`: the latter resolves the
+> engine package, which has no bin. Afterwards the `docs-overlay` bin works from package scripts.
+
+Every flag is in the [CLI readme](packages/cli#readme).
+
+## Where this pays off
+
+**A library with a supported-version policy.** Readers need the documentation that matches the version
+they installed, so `1.x`, `2.x` and `3.x` all have to stay online. Three lines may be all that changed
+between two of them — and with snapshots, saying so costs three full trees that then drift apart.
+
+**A monorepo publishing several packages.** Each product releases on its own schedule, so one version
+list cannot describe them all. The Fumadocs adapter's `scope` option gives each documentation its own
+versions inside one site, one page tree and one search index — see
+[Several documentations](https://hebus.github.io/docs-overlay/docs/multiple-products/) and
+[`examples/fumadocs-multi`](examples/fumadocs-multi).
+
+**A design system.** A component page changes once per breaking release and is stable in between.
+Duplicating it every release is what lets the copies diverge.
+
+**An SDK across languages or platforms.** The conceptual pages are shared; only the reference pages
+fork per version.
+
+## Why not duplicate your docs?
+
+Snapshots are not wrong, they are just expensive in ways that only show up later:
+
+| With a full copy per version                  | What it costs                                                                                                                                                                                                        |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| fix a typo present in four versions           | four edits, or the typo survives in three of them                                                                                                                                                                    |
+| review a release                              | a diff of ~200 files in which ~190 are identical                                                                                                                                                                     |
+| answer "what changed for readers in 11.14.0?" | nobody can, from git alone                                                                                                                                                                                           |
+| mark new and updated pages in the sidebar     | hand-maintained, so it decays. Measured on one real 216-page version: **8 badges outright wrong, 65 missing, 96 right** — and the base version, which has no predecessor to be new against, claimed 6 pages were new |
+| keep an old URL alive after a rename          | a redirect plugin, configured by hand, per version                                                                                                                                                                   |
+
+And what it costs you instead, because this is not free either:
+
+- Resolution is a concept your contributors have to learn.
+- Inheritance is invisible to readers unless the site says so — the adapters expose `inheritedFrom` for
+  exactly that, but you have to render it.
+- On Docusaurus, `docs/` becomes a build artefact, which is a change of reflex for every contributor.
+- Deduplication itself is a modest win. On the measured corpus 119 of ~160 shared files genuinely
+  differed between two adjacent versions; the payoff is the cut, the reviewability and the absence of
+  drift, not the file count.
+
+## How this is verified
+
+- **346 tests across 27 files** (Vitest). The core's fixtures are TypeScript factories, never files on
+  disk — it is filesystem-free and its tests stay that way.
+- **Two end-to-end suites assert the exported HTML** of two built sites:
+  [`examples/fumadocs-next`](examples/fumadocs-next) covers multi-hop inheritance, a tombstone with
+  `replacedBy`, a re-add, a rename redirect that still works in the newest release, navigation
+  inheritance, an alias with its canonical, and the "Unchanged since" notice — including its absence on
+  a version that owns the page. [`examples/fumadocs-multi`](examples/fumadocs-multi) covers several
+  documentations side by side.
+- **One integration test runs the real `loader()`** from `fumadocs-core`, because the contract that
+  matters is the one Fumadocs implements.
+- **The core's independence is proven three ways:** a static architecture test that forbids `react`,
+  `next`, `fumadocs-*`, `astro`, `nextra`, `vitepress` and every `node:*` import and requires
+  `dependencies` _and_ `peerDependencies` to be empty; the same treatment for the Docusaurus adapter's
+  "performs no I/O"; and `npm run verify:independence`, which packs the core with `npm pack` and runs a
+  probe against it in a temporary directory with **no `node_modules` at all**.
+- `npm run typecheck:packaged` typechecks the adapters against the **built** `.d.ts` with no source
+  alias in play, which is what validates the published `exports` maps.
+- A performance guard: 10 versions × 500 pages fold in under a second, and 10 000 `resolve()` calls
+  trigger no additional fold.
+
+## This project documents itself with it
+
+The site at **[hebus.github.io/docs-overlay](https://hebus.github.io/docs-overlay)** is served by
+`docs-overlay`, so it is its own proof.
+Its pages live in [`apps/docs/content/docs/`](apps/docs/content/docs): the oldest folder holds the
+complete tree, the newer one holds only the pages an actual release rewrote, `next/` holds only what an
+unreleased change touched — often nothing — and every inherited page says which version wrote it.
+`scripts/cut-docs.mjs` performs the cut inside the "chore: version packages" pull request, so it is
+reviewed alongside the version bump rather than remembered afterwards.
 
 ## Documentation
 
-**https://hebus.github.io/docs-overlay** — and that site is documented with this library, so it is its own proof.
+| Page                                                                                      | About                                                       |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| [Overview](https://hebus.github.io/docs-overlay/docs/)                                    | What it is, what to install                                 |
+| [Authoring](https://hebus.github.io/docs-overlay/docs/authoring/)                         | Folders, the operations, releases, maintenance branches     |
+| [Resolution](https://hebus.github.io/docs-overlay/docs/resolution/)                       | The fold, the priority order, the truth table               |
+| [Architecture](https://hebus.github.io/docs-overlay/docs/architecture/)                   | The core/adapter boundary, and how it is kept honest        |
+| [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/)                 | What the engine gives you, and what breaks a site quietly   |
+| [Staying on Docusaurus](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/) | Keep Docusaurus, drop the snapshots                         |
+| [Migrating to Fumadocs](https://hebus.github.io/docs-overlay/docs/migrating-to-fumadocs/) | Two frameworks, one content model, and the honest payoff    |
+| [Several documentations](https://hebus.github.io/docs-overlay/docs/multiple-products/)    | One site, one product per scope, each with its own versions |
 
-| Page                                                                                              | About                                                        |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| [Authoring](https://hebus.github.io/docs-overlay/docs/authoring/)                                 | Folders, the four operations, releases, maintenance branches |
-| [Resolution](https://hebus.github.io/docs-overlay/docs/resolution/)                               | The fold, the priority order, the truth table                |
-| [Architecture](https://hebus.github.io/docs-overlay/docs/architecture/)                           | The core/adapter boundary and how it is kept honest          |
-| [Writing an adapter](https://hebus.github.io/docs-overlay/docs/adapters/)                         | What the engine gives you, and what breaks a site quietly    |
-| [Migrating from Docusaurus](https://hebus.github.io/docs-overlay/docs/migrating-from-docusaurus/) | Folder mapping, steps, honest payoff                         |
+## Contributing
 
-The pages live in [`apps/docs/content/docs/`](apps/docs/content/docs) — the oldest version folder holds
-all of them, `next/` holds only what an unreleased change rewrote, and every inherited page says which
-version wrote it. Cutting a version is a `git mv` that git records as renames and nothing else, so the
-content diff is empty; `scripts/cut-docs.mjs` does it during the version pull request.
-
-[`examples/fumadocs-next`](examples/fumadocs-next) is a working site with five versions covering
-override, rename, tombstone, re-add, alias and navigation inheritance. Its `postbuild` asserts the
-exported HTML, so it is the end-to-end test as much as the demo.
+The one rule is that adapters depend on the core and never the reverse — the core must never import a
+framework or a Node built-in, and two guards fail the build if that slips. Setup, the checks to run
+before committing, changesets and the release process are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 
-MIT
+[MIT](LICENSE)

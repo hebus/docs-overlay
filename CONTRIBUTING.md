@@ -21,26 +21,35 @@ See [Architecture](https://hebus.github.io/docs-overlay/docs/architecture/), who
 ## Before committing
 
 ```bash
-npm run lint
-npm run fmt:check
-npm run typecheck
-npm test
+npm run lint                   # oxlint; `npm run lint:fix` for the fixable ones
+npm run fmt:check              # oxfmt — it formats Markdown and JSON too, so run `npm run fmt` first
+npm run typecheck              # per package, against the core's sources
+npm test                       # vitest; `npm run test:watch` while working
 ```
 
 And for anything touching the published surface:
 
 ```bash
-npm run build
+npm run build                  # the four packages: vite (esm) + tsc (d.ts)
 npm run typecheck:packaged     # validates the exports maps
 npm run verify:independence    # runs the core with no node_modules
 npm run build:example          # end-to-end assertions on the exported HTML
+npm run build:example:multi    # the same, for several documentations on one site
 npm run build:docs             # the documentation site
+```
+
+And for anything touching the documentation:
+
+```bash
+npm run check:journal          # refuses a journal that could have been reconstructed
+npm run check:coverage         # refuses documentation that dropped a judgement or a pitfall
 ```
 
 ## Releasing
 
 CI never publishes. It only keeps the "chore: version packages" pull request up to date; merging
-that bumps the versions and writes the changelogs. Publishing is local:
+that bumps the versions and writes the changelogs. Publishing is local, so the tarball that reaches
+npmjs is the one verified on a real machine and no long-lived npm token has to live in CI:
 
 ```bash
 npm run release:dry    # every check, nothing published
@@ -48,7 +57,7 @@ npm run release
 ```
 
 It builds, re-checks the packaged types and the core's independence, publishes each pending package
-to npmjs and pushes one tag per package — `docs-overlay@0.1.0`, since Changesets bumps the two
+to npmjs and pushes one tag per package — `docs-overlay@0.1.0`, since Changesets bumps the four
 packages independently and they will drift apart.
 
 Two refusals worth knowing about, because both protect the same thing — that npm, the changelog and
