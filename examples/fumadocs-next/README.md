@@ -8,8 +8,12 @@ test as much as the demo.
 npm ci                  # from the repository root
 npm run build           # the packages first: this app consumes their dist/
 npm run build:example
-npx serve out
+npm --prefix examples/fumadocs-next start
 ```
+
+`start` serves the export with `http-server`, not `serve`: `serve` treats a path segment containing a
+dot as a filename, so it never looks for `index.html` inside a version folder and answers
+`/docs/1.0.0/` with a directory listing.
 
 ## What the content covers
 
