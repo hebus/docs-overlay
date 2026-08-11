@@ -1,5 +1,14 @@
 # docs-overlay
 
+## 0.2.1
+
+### Patch Changes
+
+- 4a6eed7: Say what each package is for on its npm page. The descriptions led with the implementation rather
+  than the problem — the Docusaurus one read as a remark about Docusaurus — and the keywords omitted the
+  terms someone looking for this would search: documentation versioning, versioned documentation,
+  Fumadocs and Docusaurus versioning, monorepo. The rewritten readmes ship with them. No code change.
+
 ## 0.2.0
 
 ### Minor Changes

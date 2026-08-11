@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-docusaurus",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Versioned documentation for Docusaurus without copying versioned_docs: author only the diff between versions, and let the build materialise the snapshots Docusaurus reads.",
   "license": "MIT",
   "author": "Olivier Tomé",
@@ -23,7 +23,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "docs-overlay": "^0.2.0"
+    "docs-overlay": "^0.2.1"
   },
   "keywords": [
     "docusaurus",

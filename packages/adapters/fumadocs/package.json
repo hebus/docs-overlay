@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-fumadocs",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Versioned documentation for Fumadocs without duplicating it: author only the diff between versions, and one loader() serves every version.",
   "license": "MIT",
   "author": "Olivier Tomé",
@@ -27,7 +27,7 @@
     "dev": "vite build --watch"
   },
   "dependencies": {
-    "docs-overlay": "^0.2.0"
+    "docs-overlay": "^0.2.1"
   },
   "peerDependencies": {
     "fumadocs-core": ">=16 <17",
