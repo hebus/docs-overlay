@@ -21,6 +21,7 @@ import { cutCommand } from "../src/commands/cut.js";
 import { materializeCommand } from "../src/commands/materialize.js";
 import { pruneCommand } from "../src/commands/prune.js";
 import { parseArgs } from "../src/args.js";
+import { genericDialect, hasDocusaurusConfig, resolveDialect, type SiteDialect } from "../src/dialect.js";
 import { SENTINEL, walk } from "../src/io.js";
 
 /** A page whose bytes we can compare, kept minimal so a diff is about the test and not the prose. */
@@ -96,6 +97,7 @@ const materialize = async (site: Site, overrides: Partial<Parameters<typeof mate
     clean: true,
     json: false,
     allowErrors: false,
+    dialect: docusaurus,
     ...overrides
   });
 
@@ -103,6 +105,12 @@ const materialize = async (site: Site, overrides: Partial<Parameters<typeof mate
 const generated = (site: Site): string[] => walk(site.root).filter(path => !path.startsWith("content/"));
 
 let site: Site;
+/**
+ * The fixture is a Docusaurus tree — it navigates with `sidebars.json` — so every command reading it has
+ * to be told so. Resolved once for the file rather than per test: it loads the adapter, and the point of
+ * the dialect is that loading it is a choice made in one place.
+ */
+let docusaurus: SiteDialect;
 /** Everything the command printed, so a test can assert what a human actually reads. */
 let printed: string[];
 
@@ -112,8 +120,9 @@ const occurrences = (needle: string): number =>
     .split("\n")
     .filter(line => line.includes(needle)).length;
 
-beforeEach(() => {
+beforeEach(async () => {
   site = makeSite();
+  ({ dialect: docusaurus } = await resolveDialect(site.root, "docusaurus"));
   printed = [];
   // These commands are meant to be read by a human in a terminal; a test run is not that human.
   vi.spyOn(console, "log").mockImplementation(message => {
@@ -320,14 +329,15 @@ describe("cut", () => {
 });
 
 describe("prune", () => {
-  const prune = (overrides: { dryRun?: boolean; version?: string } = {}): number =>
+  const prune = (overrides: { dryRun?: boolean; version?: string; dialect?: SiteDialect } = {}): number =>
     pruneCommand({
       contentDir: site.content,
       channels: ["next"],
       version: overrides.version,
       dryRun: overrides.dryRun ?? false,
       useGit: false,
-      json: false
+      json: false,
+      dialect: overrides.dialect ?? docusaurus
     });
 
   it("removes only the file a version repeats byte for byte", () => {
@@ -355,7 +365,7 @@ describe("prune", () => {
 
   it("serves the pruned slug by inheritance afterwards", () => {
     prune();
-    expect(checkCommand({ contentDir: site.content, channels: ["next"], json: false, failOn: "error" })).toBe(0);
+    expect(checkCommand({ contentDir: site.content, channels: ["next"], json: false, failOn: "error", dialect: docusaurus })).toBe(0);
   });
 
   it("--dry-run removes nothing", () => {
@@ -370,7 +380,8 @@ describe("prune", () => {
 });
 
 describe("check", () => {
-  const check = (failOn: "error" | "warning"): number => checkCommand({ contentDir: site.content, channels: ["next"], json: false, failOn });
+  const check = (failOn: "error" | "warning"): number =>
+    checkCommand({ contentDir: site.content, channels: ["next"], json: false, failOn, dialect: docusaurus });
 
   it("passes on a tree with nothing wrong with it", () => {
     expect(check("error")).toBe(0);
@@ -415,5 +426,146 @@ describe("check", () => {
     writeFileSync(join(site.content, "2.0.0", "guide", "twice.mdx"), page("Twice", "The other."));
 
     expect(check("error")).toBe(1);
+  });
+
+  it("names the dialect it read the tree with", () => {
+    check("error");
+    expect(output()).toContain("dialect    docusaurus");
+  });
+
+  it("carries the dialect and its reason into --json", () => {
+    checkCommand({ contentDir: site.content, channels: ["next"], json: true, failOn: "error", dialect: docusaurus, dialectReason: "--dialect docusaurus" });
+
+    const report = JSON.parse(output()) as { dialect: string; dialectReason: string };
+    expect(report.dialect).toBe("docusaurus");
+    expect(report.dialectReason).toBe("--dialect docusaurus");
+  });
+});
+
+/**
+ * Reading a tree with no adapter in the loop, and refusing to read one that needs it.
+ *
+ * The generic dialect derives slugs with the engine's own rules and reads no navigation file, which is
+ * what lets `check` and `prune` work on a machine where only this package is installed. It is also
+ * *wrong* for a Docusaurus tree — different slugs, so every directive would aim at a URL that does not
+ * exist — which is why picking it by accident has to be impossible rather than merely unlikely.
+ */
+describe("dialects", () => {
+  /** A tree with no `sidebars.json`: the shape a project that is not Docusaurus has. */
+  function makeGenericSite(): Site {
+    const root = mkdtempSync(join(tmpdir(), "docs-overlay-generic-"));
+    const content = join(root, "content", "docs");
+    const write = (path: string, text: string): void => {
+      mkdirSync(join(content, path, ".."), { recursive: true });
+      writeFileSync(join(content, path), text);
+    };
+
+    write("1.0.0/index.md", page("Home", "Home."));
+    write("1.0.0/guide/intro.md", page("Intro", "Intro."));
+    write("2.0.0/guide/moved.md", page("Moved", "Moved.", "overlay:\n  renamedFrom: guide/intro\n"));
+
+    return { root, content };
+  }
+
+  let generic: Site;
+
+  beforeEach(() => {
+    generic = makeGenericSite();
+  });
+
+  afterEach(() => {
+    rmSync(generic.root, { recursive: true, force: true });
+  });
+
+  it("reads a tree with no navigation file, with no adapter involved", () => {
+    const code = checkCommand({ contentDir: generic.content, channels: [], json: true, failOn: "warning", dialect: genericDialect });
+
+    // `--fail-on warning` on purpose: this asserts the absence of *any* diagnostic, so a navigation file
+    // the generic dialect quietly failed to understand could not hide as a warning.
+    expect(code).toBe(0);
+    const report = JSON.parse(output()) as { dialect: string; versions: string[]; diagnostics: unknown[] };
+    expect(report.dialect).toBe("generic");
+    expect(report.versions).toEqual(["1.0.0", "2.0.0"]);
+    expect(report.diagnostics).toEqual([]);
+  });
+
+  it("honours --dialect generic even where a Docusaurus config sits", async () => {
+    writeFileSync(join(generic.root, "docusaurus.config.ts"), "export default {};\n");
+
+    expect(hasDocusaurusConfig(generic.root)).toBe(true);
+    expect((await resolveDialect(generic.root, "generic")).dialect.name).toBe("generic");
+  });
+
+  it("detects a config named .cjs, which the old list missed", async () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-overlay-cjs-"));
+    try {
+      writeFileSync(join(root, "docusaurus.config.cjs"), "module.exports = {};\n");
+
+      expect(hasDocusaurusConfig(root)).toBe(true);
+      expect((await resolveDialect(root, undefined)).dialect.name).toBe("docusaurus");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reads a tree generically when nothing says Docusaurus, and says why", async () => {
+    const resolved = await resolveDialect(generic.root, undefined);
+
+    expect(resolved.dialect.name).toBe("generic");
+    expect(resolved.reason).toContain("no docusaurus.config.*");
+  });
+
+  it("refuses a Docusaurus tree read generically rather than deriving different slugs", () => {
+    // The failure this guards is silent: `sidebars.json` would be carried along as an ordinary file and
+    // every slug would be computed with the wrong rules, with nothing looking out of place.
+    expect(checkCommand({ contentDir: site.content, channels: ["next"], json: false, failOn: "error", dialect: genericDialect })).toBe(1);
+    expect(output()).toContain("sidebars.json");
+    expect(output()).toContain("--dialect docusaurus");
+  });
+
+  it("lets --dialect generic through, since that is what its own message advises", () => {
+    // The refusal above prints "--dialect generic  confirms these are the rules you want". If passing it
+    // changed nothing, the tool would be sending people round a loop it has no exit from.
+    const code = checkCommand({
+      contentDir: site.content,
+      channels: ["next"],
+      json: false,
+      failOn: "error",
+      dialect: genericDialect,
+      dialectRequested: true
+    });
+
+    expect(code).toBe(0);
+    expect(output()).toContain("dialect    generic");
+  });
+
+  it("refuses to prune such a tree without having removed anything", () => {
+    // The assertion that matters. `prune` deletes, and with the wrong slug rules it would answer
+    // "identical to what it inherits" about the wrong pages — a removal that looks entirely successful.
+    expect(
+      pruneCommand({ contentDir: site.content, channels: ["next"], version: undefined, dryRun: false, useGit: false, json: false, dialect: genericDialect })
+    ).toBe(1);
+
+    expect(existsSync(join(site.content, "2.0.0", "guide", "intro.md"))).toBe(true);
+    expect(walk(join(site.content, "2.0.0"))).toEqual(["guide/aliased.md", "guide/changed.md", "guide/intro.md", "guide/new-api.md"]);
+  });
+
+  it("materialize refuses the generic dialect, since only Docusaurus has a tree to write", async () => {
+    expect(await materialize(site, { dialect: genericDialect, dialectRequested: true })).toBe(1);
+    expect(output()).toContain("cannot run with the generic dialect");
+    // Asked for explicitly, so the way out is to stop asking.
+    expect(output()).toContain("Drop --dialect");
+    expect(existsSync(join(site.root, "versions.json"))).toBe(false);
+  });
+
+  it("tells a failed detection apart from an explicit --dialect when it refuses", async () => {
+    // Nobody asked for the generic dialect here: it is what detection produced. Advising them to drop a
+    // flag they never passed sends them looking for something that is not there — the real answer is that
+    // no Docusaurus config was found, which is either the wrong --site-dir or a missing adapter.
+    expect(await materialize(site, { dialect: genericDialect, dialectRequested: false })).toBe(1);
+
+    expect(output()).not.toContain("Drop --dialect");
+    expect(output()).toContain("No docusaurus.config.* was found");
+    expect(output()).toContain("--site-dir");
   });
 });

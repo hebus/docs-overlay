@@ -17,6 +17,7 @@ import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
+import { dialectMismatch, genericDialect, type SiteDialect } from "../dialect.js";
 import { fail, say } from "../log.js";
 import { readSite } from "../site.js";
 
@@ -28,10 +29,27 @@ export interface PruneArgs {
   readonly dryRun: boolean;
   readonly useGit: boolean;
   readonly json: boolean;
+  /** Conventions to read the tree with. Omitted reads it generically — see `readSite`. */
+  readonly dialect?: SiteDialect | undefined;
+  /** Why that dialect, printed so a wrong guess is visible rather than silent. */
+  readonly dialectReason?: string | undefined;
+  /** `true` when the dialect was named rather than detected, which is what makes it final. */
+  readonly dialectRequested?: boolean | undefined;
 }
 
 export function pruneCommand(args: PruneArgs): number {
-  const site = readSite({ contentDir: args.contentDir, channels: args.channels });
+  const dialect = args.dialect ?? genericDialect;
+  const site = readSite({ contentDir: args.contentDir, channels: args.channels, dialect });
+
+  // Checked here, before a single path is computed, because this is the command that deletes. Read with
+  // the wrong dialect the slugs differ, so `resolve()` finds different parents and "identical to what it
+  // inherits" is answered about the wrong pages — which is a removal that looks entirely successful.
+  const mismatch = dialectMismatch(site.foreignMetaFiles, dialect, args.dialectRequested);
+  if (mismatch !== undefined) {
+    fail(mismatch);
+    return 1;
+  }
+
   const versions = site.overlay.versions;
 
   if (versions.length === 0) {
@@ -60,9 +78,10 @@ export function pruneCommand(args: PruneArgs): number {
       if (page.inherited) continue;
 
       // A file carrying a directive is kept even when its bytes match: pruning it would delete the
-      // rename or the alias with it, and the slug would stop answering.
-      const directives = page.meta.frontMatter?.["overlay"];
-      if (directives !== undefined && directives !== null) continue;
+      // rename or the alias with it, and the slug would stop answering. Asked of the dialect rather than
+      // read out of the metadata by hand, so the answer is the same one the engine acted on — a
+      // hand-rolled lookup would have to repeat `normaliseDirectives` and would eventually disagree.
+      if (dialect.directivesOf(page.meta) !== undefined) continue;
 
       const inherited = site.overlay.resolve(parent, page.slug);
       if (inherited.kind !== "own" && inherited.kind !== "inherited") continue;
@@ -83,10 +102,12 @@ export function pruneCommand(args: PruneArgs): number {
   redundant.sort((a, b) => a.path.localeCompare(b.path));
 
   if (args.json) {
-    say(JSON.stringify({ redundant, dryRun: args.dryRun }, undefined, 2));
+    say(JSON.stringify({ dialect: dialect.name, dialectReason: args.dialectReason, redundant, dryRun: args.dryRun }, undefined, 2));
   } else if (redundant.length === 0) {
+    say(`dialect    ${dialect.name}${args.dialectReason === undefined ? "" : `  (${args.dialectReason})`}`);
     say(`nothing to prune: no version repeats a file its parent already serves.`);
   } else {
+    say(`dialect    ${dialect.name}${args.dialectReason === undefined ? "" : `  (${args.dialectReason})`}`);
     const byVersion = new Map<VersionId, number>();
     for (const entry of redundant) byVersion.set(entry.version, (byVersion.get(entry.version) ?? 0) + 1);
     say(`${redundant.length} file(s) identical to what they inherit:`);

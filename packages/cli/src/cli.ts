@@ -1,8 +1,9 @@
 /**
  * The one bin.
  *
- * `cut` and `check` are universal; `materialize` is Docusaurus-specific and loads its adapter lazily, so
- * a Fumadocs project installing this to move a folder never pulls Docusaurus knowledge in.
+ * `cut`, `check` and `prune` read a tree with whichever dialect `resolveDialect` settles on, so none of
+ * them requires a framework adapter to be installed; `materialize` is Docusaurus-specific, because
+ * writing the tree a framework reads is the one job that has no framework-neutral form.
  *
  * A trap worth knowing about, because the first run is where it bites: `npx docs-overlay` resolves the
  * *package* `docs-overlay`, which is the engine and has no bin, and fails with nothing useful to say.
@@ -10,7 +11,6 @@
  * scripts and `npm exec`.
  */
 
-import { existsSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
 import { boolFlag, parseArgs, stringFlag } from "./args.js";
@@ -18,6 +18,7 @@ import { checkCommand } from "./commands/check.js";
 import { cutCommand } from "./commands/cut.js";
 import { materializeCommand } from "./commands/materialize.js";
 import { pruneCommand } from "./commands/prune.js";
+import { hasDocusaurusConfig, resolveDialect, type DialectName } from "./dialect.js";
 import { fail, say } from "./log.js";
 
 const FLAGS = [
@@ -30,6 +31,7 @@ const FLAGS = [
   "--mark-added=",
   "--mark-changed=",
   "--fail-on=",
+  "--dialect=",
   "--version-id=",
   "--check",
   "--no-clean",
@@ -55,6 +57,11 @@ Common options
   --channel <name>           repeatable; default: next
   --route-base-path <path>   must match the docs plugin's routeBasePath; default: /
   --label <id=text>          repeatable display label, e.g. --label next="Next 🚧"
+  --dialect docusaurus|generic
+                             conventions to read the tree with: how a file path becomes a slug, and
+                             which navigation file counts. Default: docusaurus when the site has a
+                             docusaurus.config.*, generic otherwise. The two derive different slugs,
+                             so this is not cosmetic
   --json                     machine-readable output
 
 materialize
@@ -120,9 +127,28 @@ export async function main(argv: readonly string[]): Promise<number> {
   const channels = collect(argv, "--channel").length > 0 ? collect(argv, "--channel") : ["next"];
   const json = boolFlag(parsed.flags, "json");
 
+  const requestedDialect = stringFlag(parsed.flags, "dialect");
+  if (requestedDialect !== undefined && requestedDialect !== "docusaurus" && requestedDialect !== "generic") {
+    fail("--dialect takes docusaurus or generic.");
+    return 1;
+  }
+
+  // Resolved once, and before any command runs: it is the only thing here that can load an adapter, and
+  // the reason travels with it so every command can print which conventions it just used.
+  let dialect, dialectReason, dialectRequested;
+  try {
+    ({ dialect, reason: dialectReason, requested: dialectRequested } = await resolveDialect(siteDir, requestedDialect as DialectName | undefined));
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
+
   switch (parsed.command) {
     case "materialize":
       return materializeCommand({
+        dialect,
+        dialectReason,
+        dialectRequested,
         siteDir,
         contentDir,
         outDir,
@@ -143,7 +169,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         fail("--fail-on takes error or warning.");
         return 1;
       }
-      return checkCommand({ contentDir, channels, json, failOn });
+      return checkCommand({ contentDir, channels, json, failOn, dialect, dialectReason, dialectRequested });
     }
 
     case "cut": {
@@ -168,7 +194,10 @@ export async function main(argv: readonly string[]): Promise<number> {
         version: stringFlag(parsed.flags, "version-id"),
         dryRun: boolFlag(parsed.flags, "dry-run"),
         useGit: !boolFlag(parsed.flags, "no-git"),
-        json
+        json,
+        dialect,
+        dialectReason,
+        dialectRequested
       });
 
     default:
@@ -177,13 +206,21 @@ export async function main(argv: readonly string[]): Promise<number> {
   }
 }
 
-/** Walks up from the working directory looking for a Docusaurus config, so the tool works from anywhere in a site. */
+/**
+ * Walks up from the working directory looking for a Docusaurus config, so the tool works from anywhere
+ * in a site.
+ *
+ * The same test picks the dialect, hence the shared `hasDocusaurusConfig`: two lists of config names
+ * would drift, and the day they drift is the day a Docusaurus tree is read with the wrong slug rules.
+ * Finding nothing answers the working directory, which is a guess — `dialectMismatch` is what catches it
+ * when the guess was wrong.
+ */
 function resolveSiteDir(given: string | undefined): string {
   if (given !== undefined) return resolve(given);
 
   let directory = process.cwd();
   for (;;) {
-    if (["docusaurus.config.js", "docusaurus.config.ts", "docusaurus.config.mjs"].some(name => existsSync(join(directory, name)))) return directory;
+    if (hasDocusaurusConfig(directory)) return directory;
     const parent = dirname(directory);
     if (parent === directory) return process.cwd();
     directory = parent;

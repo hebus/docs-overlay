@@ -31,6 +31,14 @@
     "docs-overlay": "^0.2.1",
     "yaml": "^2.8.0"
   },
+  "peerDependencies": {
+    "docs-overlay-docusaurus": "^0.2.2"
+  },
+  "peerDependenciesMeta": {
+    "docs-overlay-docusaurus": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "docs-overlay-docusaurus": "*"
   },

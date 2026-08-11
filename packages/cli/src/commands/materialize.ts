@@ -7,8 +7,10 @@
  */
 
 import type { Diagnostic } from "docs-overlay";
+import type { DocusaurusMeta } from "docs-overlay-docusaurus";
 import { join } from "node:path";
 
+import { resolveDialect, type SiteDialect } from "../dialect.js";
 import { assertWritable, readBytes, reconcile, type PlannedFile } from "../io.js";
 import { fail, formatDiagnostics, hasErrors, say, uniqueDiagnostics } from "../log.js";
 import { readSite } from "../site.js";
@@ -27,21 +29,53 @@ export interface MaterializeArgs {
   readonly clean: boolean;
   readonly json: boolean;
   readonly allowErrors: boolean;
+  /**
+   * Must be the Docusaurus dialect: this command writes a Docusaurus tree, and no other framework has
+   * an equivalent to write. Typed loosely on purpose — naming the adapter's own types in an exported
+   * signature would put `docs-overlay-docusaurus` in this package's declarations, making an optional
+   * peer dependency mandatory for anyone typechecking against it.
+   */
+  readonly dialect?: SiteDialect | undefined;
+  /** Why that dialect, kept for symmetry with the other commands. */
+  readonly dialectReason?: string | undefined;
+  /** `true` when the dialect was named rather than detected, which changes what a refusal should advise. */
+  readonly dialectRequested?: boolean | undefined;
 }
 
 export async function materializeCommand(args: MaterializeArgs): Promise<number> {
-  // Imported lazily so `cut` and `check` never load Docusaurus knowledge. A Fumadocs project should not
-  // have to install an adapter it does not use in order to move a folder.
-  const adapter = await import("docs-overlay-docusaurus").catch(() => undefined);
-  if (adapter === undefined) {
-    fail("This command needs the Docusaurus adapter.\n\n  npm install docs-overlay-docusaurus\n");
+  if (args.dialect !== undefined && args.dialect.name !== "docusaurus") {
+    // The two cases read very differently to whoever is stuck. Asking for `--dialect generic` and being
+    // refused is a contradiction to point out; getting here without asking for anything means the site
+    // does not look like a Docusaurus one, and the useful answer is *why it was not detected*.
+    fail(
+      `This command writes the tree Docusaurus reads, so it cannot run with the ${args.dialect.name} dialect.\n\n` +
+        (args.dialectRequested === true
+          ? "Drop --dialect to let the site's own configuration decide, or pass --dialect docusaurus.\n"
+          : `No docusaurus.config.* was found, so this was read as a ${args.dialect.name} tree — and there is no\n` +
+            "Docusaurus site here to write into. Point --site-dir at the site, or install the adapter if this\n" +
+            "is one:\n\n  npm install docs-overlay-docusaurus\n")
+    );
     return 1;
   }
 
+  // Resolved here when the caller did not pass one, so calling this as a function needs no more setup
+  // than calling it from the bin. `resolveDialect` throws the actionable "npm install" message when the
+  // adapter is absent, which is the one thing this command cannot do without.
+  const dialect = args.dialect ?? (await resolveDialect(args.siteDir, "docusaurus")).dialect;
+
+  // Awaited rather than statically imported so that nothing else in this bundle pulls the adapter in.
+  // No `catch` and no fallback: the dialect above only exists because `resolveDialect` already imported
+  // this module successfully, so it is in the module cache and this resolves from memory.
+  const adapter = await import("docs-overlay-docusaurus");
+
   const diagnostics: Diagnostic[] = [];
-  const site = readSite({
+  const site = readSite<DocusaurusMeta>({
     contentDir: args.contentDir,
     channels: args.channels,
+    // Narrowed, not reinterpreted: the check above established this is the Docusaurus dialect, whose
+    // navigation parser produces the adapter's own metadata. `SiteMeta` is the loose shape the exported
+    // signature can afford to name; this is the precise one, and only this module can say so.
+    dialect: dialect as SiteDialect<DocusaurusMeta>,
     onDiagnostic: diagnostic => diagnostics.push(diagnostic)
   });
 
