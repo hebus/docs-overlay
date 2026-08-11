@@ -13,6 +13,27 @@ export function slash(path: string): string {
   return path.replaceAll("\\", "/");
 }
 
+/**
+ * Joins a base URL onto URL segments: `("/docs", "1.0.0", "guide")` → `"/docs/1.0.0/guide"`.
+ *
+ * A site whose documentation sits at the root — `baseUrl: "/"`, the shape Docusaurus calls
+ * `routeBasePath: '/'` — is the reason this is not a template literal. `"/"` already ends in the
+ * separator, so appending one more emits `//guide`, which a browser reads as protocol-relative and
+ * resolves against a host named `guide`. Every URL the adapter hands back is built here, so the
+ * whole surface — `loader({ url })`, canonicals, redirect targets, version landing pages — gets the
+ * root case right at once.
+ *
+ * `baseUrl` is expected to arrive **already normalised** by `normaliseBaseUrl` — leading slash, no
+ * trailing one — which is what lets `"/"` be the single special case here rather than one test per
+ * shape. Internal on purpose: exported, it would need to defend that precondition itself, and a
+ * caller passing a raw `"/docs/"` would get back the very doubled separator this closes.
+ */
+export function joinUrl(baseUrl: string, ...segments: readonly string[]): string {
+  const parts = segments.filter(segment => segment !== "");
+  if (parts.length === 0) return baseUrl;
+  return `${baseUrl === "/" ? "" : baseUrl}/${parts.join("/")}`;
+}
+
 /** Replaces the leading version segment: `("1.0.0/guide/a.md", "3.0.0")` → `"3.0.0/guide/a.md"`. */
 export function reSegment(path: SourcePath, segment: string): SourcePath {
   const normalised = slash(path).replace(/^\/+/, "");
