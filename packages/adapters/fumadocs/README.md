@@ -1,11 +1,29 @@
 # docs-overlay-fumadocs
 
-Fumadocs adapter for [docs-overlay](../../../README.md) — versioned documentation where you author
-only the diff between versions.
+**Versioned documentation for Fumadocs, without copying your docs.**
+
+[![npm](https://img.shields.io/npm/v/docs-overlay-fumadocs?color=cb3837)](https://www.npmjs.com/package/docs-overlay-fumadocs)
+[![licence MIT](https://img.shields.io/npm/l/docs-overlay-fumadocs?color=blue)](https://github.com/hebus/docs-overlay/blob/main/LICENSE)
+[![documentation](https://img.shields.io/badge/docs-hebus.github.io-blue)](https://hebus.github.io/docs-overlay)
+
+Fumadocs has no version model of its own, so the usual answer is a folder per version and a full copy
+of the tree per release. From then on a typo present in four versions takes four edits, and nobody can
+see from git what actually changed for readers between two releases.
+
+This adapter gives Fumadocs the other model: the oldest version folder holds the complete tree, every
+newer folder holds **only what it changed**, and everything else is inherited. A fix lands once. Cutting
+a release is a folder rename. A renamed page keeps a permanent redirect, and a removed one can explain
+itself instead of 404ing.
 
 It re-projects the `StaticSource` that `fumadocs-mdx` already produced through the overlay resolver,
 then hands the result back to `loader()`. Fumadocs keeps compiling the MDX; the core only ever sees
-paths and opaque metadata.
+paths and opaque metadata — nothing is written to disk.
+
+## Install
+
+```bash
+npm install docs-overlay docs-overlay-fumadocs
+```
 
 > [!IMPORTANT]
 > `pageSchema` is a zod object in `strip` mode, so an `overlay:` key in frontmatter is **silently
@@ -132,9 +150,10 @@ export const beta = overlaySource({ source: content, scope: "beta", channels: ["
 Leave `scope` out and nothing changes: a single-product site never sees it.
 
 The full walkthrough — folders, the route, `staticParams()`, search tags, and what does not work — is
-on the site: **[Several documentations](https://hebus.github.io/docs-overlay/docs/next/multiple-products/)**.
-A working site is in [`examples/fumadocs-multi`](../../../examples/fumadocs-multi), whose `postbuild`
-asserts the exported HTML.
+on the site: **[Several documentations](https://hebus.github.io/docs-overlay/docs/multiple-products/)**.
+A working site is in
+[`examples/fumadocs-multi`](https://github.com/hebus/docs-overlay/tree/main/examples/fumadocs-multi),
+whose `postbuild` asserts the exported HTML.
 
 ## Peer dependencies
 
@@ -145,9 +164,32 @@ asserts the exported HTML.
 
 No React at runtime: the `ReactNode` types it touches are `import type` only, and the version switcher
 component lives in your app, not here. See
-[`examples/fumadocs-next/lib/version-select.tsx`](../../../examples/fumadocs-next/lib/version-select.tsx).
+[`examples/fumadocs-next/lib/version-select.tsx`](https://github.com/hebus/docs-overlay/blob/main/examples/fumadocs-next/lib/version-select.tsx).
 
 ## Known limitation: i18n
 
 Fumadocs' `i18n.parser: "dir"` consumes the first path segment — the same one this adapter uses for the
 version. They cannot both own it, and `0.x` does not support the combination.
+
+## Not on Fumadocs?
+
+The content model is the adapter's, not Fumadocs' — the engine knows nothing about any framework.
+
+- [`docs-overlay`](https://www.npmjs.com/package/docs-overlay) — the engine, if you are writing your own
+  adapter for Astro, VitePress or a script of your own.
+- [`docs-overlay-docusaurus`](https://www.npmjs.com/package/docs-overlay-docusaurus) — the same content
+  model on Docusaurus, materialised into the snapshot tree it insists on reading.
+- [`docs-overlay-cli`](https://www.npmjs.com/package/docs-overlay-cli) — `cut`, `check` and `prune` work
+  on any repository following the folder convention, Fumadocs included.
+
+## Documentation
+
+**[hebus.github.io/docs-overlay](https://hebus.github.io/docs-overlay)** — the concepts common to every
+adapter: [Authoring](https://hebus.github.io/docs-overlay/docs/authoring/) and
+[Resolution](https://hebus.github.io/docs-overlay/docs/resolution/). A complete working site, with
+end-to-end assertions on its exported HTML, is in
+[`examples/fumadocs-next`](https://github.com/hebus/docs-overlay/tree/main/examples/fumadocs-next).
+
+## Licence
+
+[MIT](https://github.com/hebus/docs-overlay/blob/main/LICENSE)
