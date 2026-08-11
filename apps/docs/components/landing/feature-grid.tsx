@@ -5,8 +5,8 @@ import { Reveal } from "./reveal";
 const FEATURES = [
   {
     icon: Package,
-    title: "Zero dependencies",
-    text: "The engine is a plain TypeScript library: no npm dependency, no node: built-in, no framework. An architecture test and a packaged run with no node_modules at all keep it that way."
+    title: "Framework-agnostic core",
+    text: "The engine is a plain TypeScript library: no npm dependency, no node: built-in, no framework — the Fumadocs and Docusaurus adapters sit on top of it. An architecture test and a packaged run with no node_modules at all keep it that way."
   },
   {
     icon: FolderTree,
@@ -30,8 +30,8 @@ const FEATURES = [
   },
   {
     icon: Boxes,
-    title: "Several products, one site",
-    text: "Scopes let each product carry its own versions, its own channel and its own overlay chain, all behind a single loader()."
+    title: "Built for a monorepo",
+    text: "Packages released on separate schedules cannot share one version list. Scopes let each carry its own versions, its own channel and its own overlay chain, all behind a single loader()."
   }
 ];
 

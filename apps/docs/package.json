@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "docs-overlay": "*",
+    "docs-overlay-cli": "*",
+    "docs-overlay-docusaurus": "*",
     "docs-overlay-fumadocs": "*",
     "fumadocs-core": "^16.14.0",
     "fumadocs-mdx": "^15.2.2",

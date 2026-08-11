@@ -6,10 +6,14 @@ import { CodeBlock, CodeBlockTab, CodeBlockTabs, CodeBlockTabsList, CodeBlockTab
 import { ArrowRight, Layers } from "lucide-react";
 
 import corePkg from "docs-overlay/package.json" with { type: "json" };
-import adapterPkg from "docs-overlay-fumadocs/package.json" with { type: "json" };
+import cliPkg from "docs-overlay-cli/package.json" with { type: "json" };
+import docusaurusPkg from "docs-overlay-docusaurus/package.json" with { type: "json" };
+import fumadocsPkg from "docs-overlay-fumadocs/package.json" with { type: "json" };
 
 import { AdapterApi } from "@/components/landing/adapter-api";
+import { CliCommands } from "@/components/landing/cli-commands";
 import { CopyCommand } from "@/components/landing/copy-command";
+import { DocusaurusPath } from "@/components/landing/docusaurus-path";
 import { FeatureGrid } from "@/components/landing/feature-grid";
 import { Footer } from "@/components/landing/footer";
 import { LayerStack } from "@/components/landing/layer-stack";
@@ -101,9 +105,14 @@ export default async function Home() {
           <div>
             <Reveal>
               <p className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-fd-border bg-fd-card/70 px-3 py-1 font-mono text-xs text-fd-muted-foreground backdrop-blur">
+                {/* Read from the packages themselves, so the four versions cannot be stale. */}
                 <span className="text-fd-foreground">docs-overlay {corePkg.version}</span>
                 <span aria-hidden="true">·</span>
-                <span className="text-fd-foreground">docs-overlay-fumadocs {adapterPkg.version}</span>
+                <span className="text-fd-foreground">fumadocs {fumadocsPkg.version}</span>
+                <span aria-hidden="true">·</span>
+                <span className="text-fd-foreground">docusaurus {docusaurusPkg.version}</span>
+                <span aria-hidden="true">·</span>
+                <span className="text-fd-foreground">cli {cliPkg.version}</span>
               </p>
             </Reveal>
 
@@ -116,7 +125,9 @@ export default async function Home() {
             <Reveal delay={0.12}>
               <p className="mt-6 max-w-xl text-lg text-pretty text-fd-muted-foreground">
                 Versioned documentation where each version folder holds only what actually changed — an override, a new page, a rename, or a tombstone. The
-                oldest folder is the complete tree; everything after it is an overlay.
+                oldest folder is the complete tree; everything after it is an overlay. Two adapters —{" "}
+                <strong className="font-medium text-fd-foreground">Fumadocs</strong> and <strong className="font-medium text-fd-foreground">Docusaurus</strong>{" "}
+                — on an engine that depends on neither.
               </p>
             </Reveal>
 
@@ -130,10 +141,10 @@ export default async function Home() {
                 </Link>
 
                 <a
-                  href="#fumadocs"
+                  href="#adapters"
                   className="inline-flex items-center gap-2 rounded-xl border border-fd-border px-5 py-2.5 text-sm font-medium transition-colors hover:bg-fd-accent hover:text-fd-accent-foreground">
                   <Layers aria-hidden="true" className="size-4 text-do-accent" />
-                  Built for Fumadocs
+                  Fumadocs and Docusaurus
                 </a>
               </div>
             </Reveal>
@@ -157,20 +168,19 @@ export default async function Home() {
       </Section>
 
       <Section
-        id="fumadocs"
+        id="adapters"
         className="bg-gradient-to-b from-do-accent/6 to-transparent"
-        kicker="The Fumadocs adapter"
+        kicker="The adapters"
         title={
           <>
-            Built for <span className="bg-gradient-to-r from-do-accent to-do-accent-2 bg-clip-text text-transparent">Fumadocs</span>.
+            Two adapters, <span className="bg-gradient-to-r from-do-accent to-do-accent-2 bg-clip-text text-transparent">one engine</span>.
           </>
         }
         lead={
           <>
-            <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">docs-overlay-fumadocs</code> is where the engine meets a real site.
-            Against an unversioned Fumadocs setup, the whole integration is two files: the source goes through{" "}
-            <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">overlaySource()</code> first, and{" "}
-            <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">loader()</code> gets a <code className="font-mono text-base">url</code>.
+            The engine knows nothing about either framework, and the two integrations are genuinely different shapes.{" "}
+            <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">docs-overlay-fumadocs</code> re-projects the source Fumadocs already
+            read, and writes nothing: three files, and the third one you already have.
           </>
         }>
         <Reveal>
@@ -208,6 +218,28 @@ export default async function Home() {
         </Reveal>
 
         <AdapterApi />
+
+        <Reveal delay={0.06}>
+          <div className="mt-16">
+            <h3 className="text-xl font-semibold tracking-tight">On Docusaurus, the build writes the tree instead</h3>
+
+            <p className="mt-3 max-w-3xl text-fd-muted-foreground">
+              Docusaurus reads its versions from fixed paths on disk, inside the docs plugin&rsquo;s own factory, before any hook could intervene — so there is
+              no moment at which an overlay could resolve inheritance on the fly.{" "}
+              <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">docs-overlay-docusaurus</code> plans the tree it expects, and{" "}
+              <code className="rounded bg-fd-secondary px-1.5 py-0.5 font-mono text-base">docs-overlay-cli</code> writes it as a prebuild step. The URLs come
+              out identical, so nothing linked from outside your site moves.
+            </p>
+
+            <div className="mt-6">
+              <CopyCommand command="npm install -D docs-overlay docs-overlay-cli docs-overlay-docusaurus" />
+            </div>
+          </div>
+        </Reveal>
+
+        <div className="mt-8">
+          <DocusaurusPath />
+        </div>
       </Section>
 
       <Section
@@ -215,6 +247,13 @@ export default async function Home() {
         title="Four operations, all declarative."
         lead="A version folder says what it changes. Nothing else is written down, and nothing has to be repeated.">
         <Operations />
+      </Section>
+
+      <Section
+        kicker="The command line"
+        title="Four commands, and none of them are a build."
+        lead="cut, check and prune need only version folders, so a Fumadocs site or a plain repository of Markdown uses them exactly as a Docusaurus site does. materialize is the one that writes.">
+        <CliCommands />
       </Section>
 
       <Section kicker="Why" title="What you get for it.">
@@ -231,7 +270,9 @@ export default async function Home() {
         <Reveal className="mx-auto max-w-2xl">
           <h2 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Ship your next version as a diff.</h2>
 
-          <p className="mt-4 text-fd-muted-foreground">Two packages, an ESM-only install, and a Fumadocs site that already knows how to serve every version.</p>
+          <p className="mt-4 text-fd-muted-foreground">
+            Four packages, an ESM-only install, and a site that already knows how to serve every version — on Fumadocs or on Docusaurus.
+          </p>
 
           <div className="mt-8 flex justify-center">
             <CopyCommand command="npm install docs-overlay docs-overlay-fumadocs" />

@@ -3,8 +3,10 @@ import Link from "next/link";
 const LINKS = [
   { label: "Documentation", href: "/docs", internal: true },
   { label: "GitHub", href: "https://github.com/hebus/docs-overlay" },
-  { label: "docs-overlay on npm", href: "https://www.npmjs.com/package/docs-overlay" },
-  { label: "docs-overlay-fumadocs on npm", href: "https://www.npmjs.com/package/docs-overlay-fumadocs" }
+  { label: "docs-overlay", href: "https://www.npmjs.com/package/docs-overlay" },
+  { label: "docs-overlay-fumadocs", href: "https://www.npmjs.com/package/docs-overlay-fumadocs" },
+  { label: "docs-overlay-docusaurus", href: "https://www.npmjs.com/package/docs-overlay-docusaurus" },
+  { label: "docs-overlay-cli", href: "https://www.npmjs.com/package/docs-overlay-cli" }
 ];
 
 export function Footer() {
