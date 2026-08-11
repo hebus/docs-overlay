@@ -1,0 +1,59 @@
+name: Docusaurus example
+
+# Its own workflow rather than a job in `pull-request.yml`, for one reason: this example is outside the
+# workspaces and has its own lockfile, so it needs its own `npm ci` and its own cache. Folding it into
+# the main pipeline would add a second dependency tree — a whole framework's worth — to every pull
+# request, including the ones that only touch a readme.
+#
+# It is the only thing that proves Docusaurus *accepts* the tree the adapter plans. The adapter's unit
+# tests describe that tree; a real build with `onBrokenLinks: throw` is what checks it.
+on:
+  pull_request:
+    paths:
+      - "packages/core/**"
+      - "packages/adapters/docusaurus/**"
+      - "packages/cli/**"
+      - "examples/docusaurus-classic/**"
+      - ".github/workflows/docusaurus-example.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "packages/core/**"
+      - "packages/adapters/docusaurus/**"
+      - "packages/cli/**"
+      - "examples/docusaurus-classic/**"
+      - ".github/workflows/docusaurus-example.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          # Both lockfiles, so a change to either invalidates the cache.
+          cache-dependency-path: |
+            package-lock.json
+            examples/docusaurus-classic/package-lock.json
+
+      # The example depends on the packages through `file:` links, which resolve to their `dist/` — so
+      # they have to be built before its install, not after.
+      - run: npm ci
+      - run: npm run build
+
+      - run: npm ci
+        working-directory: examples/docusaurus-classic
+
+      # `prebuild` materialises, `postbuild` asserts the exported HTML. A failure in either is a failure
+      # of the product, not of this example.
+      - run: npm run build
+        working-directory: examples/docusaurus-classic
+
+      # The generated tree is a build artefact, so it must be reproducible: a second materialisation of
+      # the same sources has nothing to write.
+      - run: npm run verify
+        working-directory: examples/docusaurus-classic

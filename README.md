@@ -172,7 +172,8 @@ npm install -D docs-overlay docs-overlay-cli docs-overlay-docusaurus
 You edit `content/docs/`; `docs/`, `versioned_docs/`, `versioned_sidebars/` and `versions.json` become
 build output. Put `docs-overlay materialize --check` in CI — it turns an edit made in the generated tree
 into a failed build instead of an edit that disappears without a trace. The full walkthrough is
-[Versioning Docusaurus documentation without snapshots](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/).
+[Versioning Docusaurus documentation without snapshots](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/),
+and [`examples/docusaurus-classic`](examples/docusaurus-classic) is a working site you can clone and run.
 
 ### Any other framework
 
@@ -313,14 +314,18 @@ And what it costs you instead, because this is not free either:
 
 ## How this is verified
 
-- **346 tests across 27 files** (Vitest). The core's fixtures are TypeScript factories, never files on
-  disk — it is filesystem-free and its tests stay that way.
-- **Two end-to-end suites assert the exported HTML** of two built sites:
+- **375 tests across 28 files** (Vitest). The core's fixtures are TypeScript factories, never files on
+  disk — it is filesystem-free and its tests stay that way. The CLI, which is the only package that
+  writes anything, is tested against a real tree on a real disk.
+- **Three end-to-end suites assert the exported HTML** of three built sites, one per framework path:
   [`examples/fumadocs-next`](examples/fumadocs-next) covers multi-hop inheritance, a tombstone with
   `replacedBy`, a re-add, a rename redirect that still works in the newest release, navigation
   inheritance, an alias with its canonical, and the "Unchanged since" notice — including its absence on
   a version that owns the page. [`examples/fumadocs-multi`](examples/fumadocs-multi) covers several
-  documentations side by side.
+  documentations side by side. [`examples/docusaurus-classic`](examples/docusaurus-classic) is a real
+  Docusaurus build with `onBrokenLinks: "throw"`, which is the only thing that proves Docusaurus
+  _accepts_ the tree the adapter plans — including that every generated sidebar is valid for its own
+  version.
 - **One integration test runs the real `loader()`** from `fumadocs-core`, because the contract that
   matters is the one Fumadocs implements.
 - **The core's independence is proven three ways:** a static architecture test that forbids `react`,
