@@ -10,7 +10,7 @@
     "prebuild": "fumadocs-mdx",
     "build": "next build",
     "postbuild": "node scripts/postbuild.mjs",
-    "start": "npx serve out"
+    "start": "http-server out -c-1"
   },
   "dependencies": {
     "docs-overlay": "*",
