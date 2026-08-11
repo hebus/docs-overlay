@@ -1,7 +1,7 @@
 {
   "name": "docs-overlay-fumadocs",
   "version": "0.2.1",
-  "description": "Fumadocs adapter for docs-overlay: versioned documentation with overlay inheritance.",
+  "description": "Versioned documentation for Fumadocs without duplicating it: author only the diff between versions, and one loader() serves every version.",
   "license": "MIT",
   "author": "Olivier Tomé",
   "type": "module",
@@ -44,11 +44,17 @@
   },
   "keywords": [
     "fumadocs",
+    "fumadocs-versioning",
+    "documentation-versioning",
+    "versioned-documentation",
     "documentation",
     "docs",
     "versioning",
-    "overlay",
-    "nextjs"
+    "nextjs",
+    "mdx",
+    "markdown",
+    "docs-as-code",
+    "docs-overlay"
   ],
   "repository": {
     "type": "git",
