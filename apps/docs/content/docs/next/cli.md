@@ -87,8 +87,10 @@ What it reports: duplicate slugs, a tombstone with no target, a rename or alias 
 page, a redirect cycle or a redirect pointing at nothing, a folder whose name is not a version, an
 ambiguous version order, an inheritance cycle. Twelve codes in all, each with a severity.
 
-`--fail-on warning` is the stricter setting, and worth considering: a folder the engine cannot read as a
-version is only a warning, and its content simply disappears from the site.
+`--fail-on warning` is the stricter setting, and worth considering, because the two problems most likely
+to go unnoticed are both warnings rather than errors: a folder the engine cannot read as a version —
+whose content simply disappears from the site — and a tombstone that removes nothing, which usually means
+the slug it names is misspelled.
 
 ## `prune`
 
