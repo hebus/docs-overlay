@@ -17,14 +17,15 @@ everything again.
 
 ## Start here
 
-| If you…                                      | Read                                                              |
-| -------------------------------------------- | ----------------------------------------------------------------- |
-| use Fumadocs                                 | [Versioning a Fumadocs site](./versioning-fumadocs.md)            |
-| use Docusaurus and want to keep it           | [Versioning Docusaurus documentation](./staying-on-docusaurus.md) |
-| want the commands                            | [The command line](./cli.md)                                      |
-| are leaving Docusaurus for Fumadocs          | [Migrating to Fumadocs](./migrating-to-fumadocs.md)               |
-| publish several packages from one repository | [Several documentations](./multiple-products.md)                  |
-| use another framework, or none               | [Writing an adapter](./adapters.md)                               |
+| If you…                                      | Read                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------- |
+| use Fumadocs                                 | [Versioning a Fumadocs site](./versioning-fumadocs.md)                          |
+| use Docusaurus and want to keep it           | [Versioning Docusaurus documentation](./staying-on-docusaurus.md)               |
+| want the commands                            | [The command line](./cli.md)                                                    |
+| are leaving Docusaurus for Fumadocs          | [Migrating to Fumadocs](./migrating-to-fumadocs.md)                             |
+| document one npm package                     | [Versioning documentation for an npm package](./versioning-npm-package-docs.md) |
+| publish several packages from one repository | [Versioning documentation in a monorepo](./versioning-in-a-monorepo.md)         |
+| use another framework, or none               | [Writing an adapter](./adapters.md)                                             |
 
 Then [Authoring](./authoring.md) for the operations, and [Resolution](./resolution.md) for what the
 engine answers.
