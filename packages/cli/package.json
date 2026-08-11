@@ -1,7 +1,7 @@
 {
   "name": "docs-overlay-cli",
   "version": "0.2.0",
-  "description": "Command line for docs-overlay: cut a release, check content, and materialise a Docusaurus tree.",
+  "description": "Command line for docs-overlay: cut a version, check content, prune files a version repeats, and materialise the tree Docusaurus reads.",
   "license": "MIT",
   "author": "Olivier Tomé",
   "type": "module",
@@ -36,10 +36,16 @@
   },
   "keywords": [
     "docs-overlay",
-    "documentation",
-    "versioning",
     "cli",
-    "docusaurus"
+    "documentation-versioning",
+    "versioned-documentation",
+    "documentation",
+    "docs",
+    "versioning",
+    "docusaurus",
+    "docusaurus-versioning",
+    "monorepo",
+    "docs-as-code"
   ],
   "repository": {
     "type": "git",
