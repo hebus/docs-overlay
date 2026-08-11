@@ -3,24 +3,48 @@ import type { ReactNode } from "react";
 
 import { versionTabs } from "docs-overlay-fumadocs";
 
+import { basePath } from "@/lib/base-path";
 import { SearchRootProvider } from "@/lib/search-provider";
 import { overlay } from "@/lib/source";
 
 import "./global.css";
 
-// Read at build time, from the same variable `next.config.mjs` gives to `basePath`: the search index
-// is fetched by URL, and the client half of Next does not expose the base path.
-const basePath = process.env.BASE_PATH ?? "";
-
 const tabs = versionTabs(overlay);
 
+const DESCRIPTION =
+  "Version your documentation without duplicating it: each version folder holds only what changed — an override, a new page, a rename, or a tombstone. A framework-agnostic engine, with adapters for Fumadocs and Docusaurus.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hebus.github.io/docs-overlay"),
+  // Trailing slash, and it matters: without one, `new URL()` treats `/docs-overlay` as a file rather than
+  // a directory, so every relative metadata URL resolves to the host root and lands outside the site.
+  metadataBase: new URL("https://hebus.github.io/docs-overlay/"),
   title: { default: "docs-overlay — write the diff, not the docs", template: "%s — docs-overlay" },
-  description:
-    "Versioned documentation where each version folder holds only what changed. The oldest folder is the complete tree; everything after it is an overlay. Fumadocs adapter included.",
+  description: DESCRIPTION,
   applicationName: "docs-overlay",
-  keywords: ["documentation", "versioning", "fumadocs", "nextjs", "overlay", "docs"]
+  keywords: [
+    "documentation versioning",
+    "versioned documentation",
+    "documentation",
+    "versioning",
+    "docs",
+    "fumadocs",
+    "docusaurus",
+    "monorepo",
+    "markdown",
+    "mdx",
+    "nextjs",
+    "typescript",
+    "overlay"
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "docs-overlay",
+    // Relative, so `metadataBase` supplies the origin and the base path in one place.
+    url: "/",
+    title: "docs-overlay — write the diff, not the docs",
+    description: DESCRIPTION
+  },
+  twitter: { card: "summary", title: "docs-overlay — write the diff, not the docs", description: DESCRIPTION }
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
