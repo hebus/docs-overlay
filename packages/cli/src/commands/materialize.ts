@@ -10,7 +10,7 @@ import type { Diagnostic } from "docs-overlay";
 import { join } from "node:path";
 
 import { assertWritable, readBytes, reconcile, type PlannedFile } from "../io.js";
-import { fail, formatDiagnostics, hasErrors, say } from "../log.js";
+import { fail, formatDiagnostics, hasErrors, say, uniqueDiagnostics } from "../log.js";
 import { readSite } from "../site.js";
 
 export interface MaterializeArgs {
@@ -79,8 +79,13 @@ export async function materializeCommand(args: MaterializeArgs): Promise<number>
     payload: { docs: plan.docsOptions, versions: plan.versions, changes: plan.changes }
   });
 
+  // The sink caught the file-level problems the plan knows nothing about; the plan's own list is complete
+  // for the engine. Both are wanted, and their overlap is reported once. Computed before the output so
+  // `--json` and the text form describe the same set — previously the JSON carried only the plan's.
+  const all = uniqueDiagnostics([...diagnostics, ...plan.diagnostics]);
+
   if (args.json) {
-    say(JSON.stringify({ ...result, versions: plan.versions, docsOptions: plan.docsOptions, diagnostics: plan.diagnostics }, undefined, 2));
+    say(JSON.stringify({ ...result, versions: plan.versions, docsOptions: plan.docsOptions, diagnostics: all }, undefined, 2));
   } else {
     const versions = plan.versions.map(version => `${version.id}${version.path === "" ? " (root)" : ` → /${version.path}`}`).join(", ");
     say(`versions   ${versions}`);
@@ -95,7 +100,6 @@ export async function materializeCommand(args: MaterializeArgs): Promise<number>
     for (const path of result.tampered) say(`edited by hand, overwritten: ${path} — edit the content directory instead`);
   }
 
-  const all = [...diagnostics, ...plan.diagnostics];
   if (all.length > 0 && !args.json) say(`\n${formatDiagnostics(all)}`);
 
   if (args.check && result.written.length + result.removed.length > 0) {

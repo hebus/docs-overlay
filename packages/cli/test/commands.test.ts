@@ -103,12 +103,25 @@ const materialize = async (site: Site, overrides: Partial<Parameters<typeof mate
 const generated = (site: Site): string[] => walk(site.root).filter(path => !path.startsWith("content/"));
 
 let site: Site;
+/** Everything the command printed, so a test can assert what a human actually reads. */
+let printed: string[];
+
+const output = (): string => printed.join("\n");
+const occurrences = (needle: string): number =>
+  output()
+    .split("\n")
+    .filter(line => line.includes(needle)).length;
 
 beforeEach(() => {
   site = makeSite();
+  printed = [];
   // These commands are meant to be read by a human in a terminal; a test run is not that human.
-  vi.spyOn(console, "log").mockImplementation(() => {});
-  vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "log").mockImplementation(message => {
+    printed.push(String(message));
+  });
+  vi.spyOn(console, "error").mockImplementation(message => {
+    printed.push(String(message));
+  });
 });
 
 afterEach(() => {
@@ -210,6 +223,33 @@ describe("materialize", () => {
     // to commit the generated tree.
     expect(await materialize(site, { check: true })).toBe(1);
     expect(generated(site)).toEqual([]);
+  });
+
+  it("reports each problem once", async () => {
+    // A page 1.0.0's sidebar names and 2.0.0 removes. Pruning it from the inherited sidebar is a warning
+    // in every version that inherits that sidebar — and each of those warnings is one problem, however
+    // many places the CLI happens to collect it from.
+    writeFileSync(join(site.content, "1.0.0", "guide", "legacy.md"), page("Legacy", "Here."));
+    writeFileSync(join(site.content, "2.0.0", "guide", "legacy.md"), page("Legacy", "Gone.", "overlay:\n  deleted: true\n"));
+    writeFileSync(
+      join(site.content, "1.0.0", "sidebars.json"),
+      `${JSON.stringify(
+        {
+          docs: [
+            { type: "doc", id: "index" },
+            { type: "doc", id: "guide/legacy" }
+          ]
+        },
+        undefined,
+        2
+      )}\n`
+    );
+
+    await materialize(site);
+
+    // 2.0.0 and the channel each lose the entry: two warnings, not the four the CLI used to print.
+    expect(occurrences('names the doc "guide/legacy"')).toBe(2);
+    expect(output()).toContain("0 error(s), 2 warning(s).");
   });
 
   it("refuses a target directory it did not generate", async () => {
@@ -354,6 +394,19 @@ describe("check", () => {
 
     expect(check("error")).toBe(0);
     expect(check("warning")).toBe(1);
+  });
+
+  it("reports each problem once", () => {
+    // Two sources describe the same problem — what `readSite` forwarded while building the overlay, and
+    // what `overlay.diagnostics()` returns — and a reader who sees the same warning twice reasonably
+    // concludes there are two.
+    mkdirSync(join(site.content, "draft"), { recursive: true });
+    writeFileSync(join(site.content, "draft", "index.md"), page("Draft", "Draft."));
+
+    check("error");
+
+    expect(occurrences("unknown-version-folder")).toBe(1);
+    expect(output()).toContain("0 error(s), 1 warning(s).");
   });
 
   it("fails on two files in one version resolving to the same slug", () => {

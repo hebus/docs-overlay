@@ -6,7 +6,7 @@
  * can sit in a pre-commit hook.
  */
 
-import { formatDiagnostics, hasErrors, say } from "../log.js";
+import { formatDiagnostics, hasErrors, say, uniqueDiagnostics } from "../log.js";
 import { readSite } from "../site.js";
 
 export interface CheckArgs {
@@ -19,8 +19,10 @@ export interface CheckArgs {
 export function checkCommand(args: CheckArgs): number {
   const site = readSite({ contentDir: args.contentDir, channels: args.channels });
   // `diagnostics()` materialises every version, so the answer is complete rather than whatever happened
-  // to be folded already.
-  const diagnostics = [...site.diagnostics, ...site.overlay.diagnostics()];
+  // to be folded already. `site.diagnostics` adds the file-level problems the engine never sees — a
+  // sidebar that is not valid JSON, frontmatter that is not valid YAML — and repeats everything the
+  // engine already reported, hence the deduplication.
+  const diagnostics = uniqueDiagnostics([...site.diagnostics, ...site.overlay.diagnostics()]);
 
   if (args.json) {
     say(JSON.stringify({ versions: site.overlay.versions.map(version => version.id), diagnostics }, undefined, 2));

@@ -16,6 +16,45 @@ export const fail = (message: string): void => {
 
 export const hasErrors = (diagnostics: readonly Diagnostic[]): boolean => diagnostics.some(diagnostic => diagnostic.severity === "error");
 
+/**
+ * One entry per distinct problem, in the order first seen.
+ *
+ * Every command has two overlapping views of the same set: what the engine pushed through the
+ * `onDiagnostic` sink while the tree was being read, and what `overlay.diagnostics()` — or a
+ * materialisation plan — returns afterwards. Both are wanted, because neither is complete on its own:
+ * the sink catches file-level problems the engine never sees, and the returned list is complete even for
+ * versions nothing happened to fold. Concatenating them, though, reports the overlap twice, and a reader
+ * who sees the same warning twice reasonably concludes there are two of them — then goes looking for the
+ * second.
+ *
+ * The identity is the whole of what a reader is shown, message included. Two diagnostics that print
+ * identically are indistinguishable to them, so collapsing them loses nothing.
+ */
+export function uniqueDiagnostics(diagnostics: readonly Diagnostic[]): readonly Diagnostic[] {
+  // A character no field can contain, so no two distinct diagnostics can collapse into one key. A space
+  // would not do, since a message is full of them. Written as an escape and never as a literal byte: a
+  // raw control character in a source file makes git treat the whole file as binary.
+  const SEPARATOR = "\u0000";
+  const seen = new Set<string>();
+  const unique: Diagnostic[] = [];
+
+  for (const diagnostic of diagnostics) {
+    const key = [
+      diagnostic.code,
+      diagnostic.severity,
+      diagnostic.version ?? "",
+      diagnostic.path ?? "",
+      diagnostic.slug?.join("/") ?? "",
+      diagnostic.message
+    ].join(SEPARATOR);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(diagnostic);
+  }
+
+  return unique;
+}
+
 export function formatDiagnostics(diagnostics: readonly Diagnostic[]): string {
   if (diagnostics.length === 0) return "No problems found.";
 
