@@ -1,6 +1,6 @@
 import type { Version, VersionId } from "docs-overlay";
 
-import type { VersionSegmentFn } from "./paths.js";
+import { joinUrl, type VersionSegmentFn } from "./paths.js";
 
 /** A version, plus the presentation and routing facts an adapter — not the core — is responsible for. */
 export interface VersionInfo {
@@ -39,7 +39,9 @@ export function toVersionInfo(version: Version, context: VersionInfoContext): Ve
     isLatest: version.id === context.latestId,
     isRoot,
     isChannel: version.channel !== undefined,
-    url: isRoot ? context.baseUrl : `${context.baseUrl}/${segment}`
+    // The root version has no segment, and `joinUrl` given none hands back the base URL — so the
+    // absence of a segment is the whole rule, with no second place that knows what "root" means.
+    url: joinUrl(context.baseUrl, isRoot ? "" : segment)
   };
 }
 

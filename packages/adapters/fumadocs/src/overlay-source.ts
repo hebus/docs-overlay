@@ -2,7 +2,7 @@ import { createOverlay, type Diagnostic, type DiagnosticSink, type Overlay, type
 import type { StaticSource } from "fumadocs-core/source";
 
 import { appendRest, buildMetaFiles, type MetaMerger } from "./meta.js";
-import { defaultVersionSegment, type VersionSegmentFn } from "./paths.js";
+import { defaultVersionSegment, joinUrl, type VersionSegmentFn } from "./paths.js";
 import { fromFumadocsSource, toFumadocsSourceAll, type FumadocsMeta } from "./reproject.js";
 import { toVersionInfo, type VersionInfo } from "./version-info.js";
 
@@ -130,7 +130,7 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
   const rootId = options.latestAtRoot === true ? (latestId ?? overlay.versions.at(-1)?.id) : undefined;
 
   // A version's landing page lives under its own documentation: `/docs/atomic-angular/1.0.0`.
-  const scopedBaseUrl = scope === undefined ? baseUrl : `${baseUrl}/${scope}`;
+  const scopedBaseUrl = scope === undefined ? baseUrl : joinUrl(baseUrl, scope);
   const infos = overlay.versions.map(version => toVersionInfo(version, { baseUrl: scopedBaseUrl, segmentOf, labels: options.labels, latestId, rootId }));
 
   const byId = new Map(infos.map(info => [info.id, info]));
@@ -173,8 +173,7 @@ export function overlaySource<S extends StaticSource = StaticSource>(options: Ov
       const versioned = scope === undefined ? slugs : slugs.slice(1);
       const rest = rootSegment !== undefined && versioned[0] === rootSegment ? versioned.slice(1) : versioned;
 
-      const segments = [...prefix, ...rest];
-      return segments.length === 0 ? baseUrl : `${baseUrl}/${segments.join("/")}`;
+      return joinUrl(baseUrl, ...prefix, ...rest);
     },
     versionOf: id => byId.get(id),
     versionOfSegment: segment => bySegment.get(segment)
