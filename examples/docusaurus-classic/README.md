@@ -94,12 +94,9 @@ versions.
 ## Two warnings, and they are correct
 
 `materialize` reports that `2.0.0` and `next` have a sidebar naming `guide/legacy`, which they no longer
-serve. That is the tombstone working: the page is gone, so the entry is pruned from the inherited
-sidebar rather than left to break the build. They are warnings rather than errors because the site is
-coherent either way.
-
-They are currently printed **twice each** — the CLI collects the adapter's diagnostics through a
-callback and then concatenates the plan's own list. Cosmetic, and tracked separately.
+serve. That is the tombstone working: the page is gone, so the entry is pruned from the inherited sidebar
+rather than left to break the build. They are warnings rather than errors because the site is coherent
+either way — and there really are two, one per version that inherits that sidebar.
 
 ## Things a real build taught us
 
