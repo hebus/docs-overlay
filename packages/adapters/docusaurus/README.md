@@ -1,11 +1,33 @@
 # docs-overlay-docusaurus
 
-Docusaurus adapter for [`docs-overlay`](https://www.npmjs.com/package/docs-overlay). Author only the
-diff between versions, and let the build write the tree Docusaurus expects.
+**Stop copying `versioned_docs/`.** Author only the diff between versions, and let the build write the
+snapshot tree Docusaurus insists on reading. The URLs come out identical, so nothing linked from outside
+your site moves.
+
+[![npm](https://img.shields.io/npm/v/docs-overlay-docusaurus?color=cb3837)](https://www.npmjs.com/package/docs-overlay-docusaurus)
+[![licence MIT](https://img.shields.io/npm/l/docs-overlay-docusaurus?color=blue)](https://github.com/hebus/docs-overlay/blob/main/LICENSE)
+[![documentation](https://img.shields.io/badge/docs-hebus.github.io-blue)](https://hebus.github.io/docs-overlay)
+
+Docusaurus versions by snapshot: `docusaurus docs:version` copies the whole tree. A typo present in four
+versions then takes four edits, and a reviewer cannot see from git what changed for readers between two
+releases. This adapter is the Docusaurus half of [`docs-overlay`](https://www.npmjs.com/package/docs-overlay),
+which inverts that — the oldest version folder holds the complete tree, every newer one holds only what
+it changed, and the rest is inherited.
 
 ```bash
 npm install docs-overlay docs-overlay-docusaurus
+npm install -D docs-overlay-cli
 ```
+
+You want [`docs-overlay-cli`](https://www.npmjs.com/package/docs-overlay-cli) as well: this package only
+**plans** the tree, and `docs-overlay materialize` is what performs the write.
+
+Three things you get that a plain Docusaurus site does not:
+
+- a removed page explains itself — a tombstone carrying `replacedBy` becomes a real route, not a 404;
+- a renamed page keeps its old URL working, with no redirect plugin to configure per version;
+- the "new" and "updated" marks in the sidebar are **derived** from what each version actually added or
+  changed, instead of a frontmatter field nobody recomputes when a version is cut.
 
 ## Why this one materialises
 
@@ -202,3 +224,20 @@ keyed by version, and `0.x` does not fold that second axis.
 `materialize()` never throws for a content problem — it returns `diagnostics`, like everywhere else in
 the engine. Report them and fail the build on `severity: "error"`; that is the same bar
 `onBrokenLinks: 'throw'` sets for links.
+
+## Documentation
+
+**[Versioning Docusaurus documentation without snapshots](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/)**
+is the walkthrough: moving your snapshots into an overlay, wiring the build, and proving the result did
+not lose anything. The concepts common to every adapter are
+[Authoring](https://hebus.github.io/docs-overlay/docs/authoring/) and
+[Resolution](https://hebus.github.io/docs-overlay/docs/resolution/).
+
+If you were going to change framework anyway,
+[Migrating to Fumadocs](https://hebus.github.io/docs-overlay/docs/migrating-to-fumadocs/) is the shorter
+road, and [`docs-overlay-fumadocs`](https://www.npmjs.com/package/docs-overlay-fumadocs) needs no
+materialisation at all.
+
+## Licence
+
+[MIT](https://github.com/hebus/docs-overlay/blob/main/LICENSE)
