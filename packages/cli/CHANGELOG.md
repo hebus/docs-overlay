@@ -1,5 +1,21 @@
 # docs-overlay-cli
 
+## 0.2.1
+
+### Patch Changes
+
+- 59e864c: Report each diagnostic once. `check` and `materialize` each read the same problems from two overlapping
+  sources — the sink the engine pushes through while the tree is read, and the list `overlay.diagnostics()`
+  or a materialisation plan returns afterwards — and printed the overlap twice, so a site with two warnings
+  appeared to have four. `materialize --json` now carries the same set as its text output, which previously
+  held only the plan's own diagnostics.
+- 4a6eed7: Say what each package is for on its npm page. The descriptions led with the implementation rather
+  than the problem — the Docusaurus one read as a remark about Docusaurus — and the keywords omitted the
+  terms someone looking for this would search: documentation versioning, versioned documentation,
+  Fumadocs and Docusaurus versioning, monorepo. The rewritten readmes ship with them. No code change.
+- Updated dependencies [4a6eed7]
+  - docs-overlay@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes
