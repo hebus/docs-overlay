@@ -123,7 +123,7 @@ Turning it off never changes what `resolveRoute()` reports: `inheritedFrom` is s
 the fact would leave you unable to do anything else with it — count it, log it, or show it only past a
 number of `hops`.
 
-## Two things that will bite otherwise
+## Three things that will bite otherwise
 
 **`generateStaticParams()` must use `staticParams(overlay)`, not `source.generateParams()`.** The
 loader knows only pages, so an alias, an old slug or a removed page would get no HTML — and on a static
@@ -134,6 +134,13 @@ of those links would 404.
 **Filter the search index by version.** A page served by five versions produces five index entries
 pointing at the same `structuredData`, so an unfiltered query returns five copies. Tag with
 `versionTagOf(page)` and filter on the client.
+
+**Open a version landing page after your first deploy.** `/docs/1.0.0/` is a path segment made of digits
+and dots, and some static servers read that as a filename with an extension — they then never look for
+`index.html` inside the directory, so the landing page answers with a directory listing while every page
+beneath it works. GitHub Pages and `http-server` handle it; the `serve` package does not, with no setting
+that fixes it. The build is not at fault when this happens, which is what makes it worth checking once
+deliberately.
 
 ## Several documentations on one site
 

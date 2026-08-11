@@ -214,6 +214,31 @@ A renamed page counts as **added**, because its slug is one the predecessor did 
 reader arriving at that URL experiences. An authored `className` is kept and the new one appended, so a site
 can go on using the field for something the adapter knows nothing about, such as `deprecated`.
 
+## `docusaurus serve` cannot open a version landing page
+
+Not a fault in the materialised tree, and worth knowing before it wastes an afternoon.
+
+Each release routes under a segment made of digits and dots — `build/1.0.0/index.html` — and
+`serve-handler`, which `docusaurus serve` is built on, reads a dotted segment as a filename with an
+extension. It therefore never looks for `index.html` inside the directory:
+
+```text
+/1.0.0/              404          the file is right there, 10 kB of it
+/1.0.0/index.html    301 → /1.0.0/    which 404s
+/next/               200          no dot in the name
+/1.0.0/guide/x/      200          the dot is not in the last segment
+```
+
+**The deployed site is unaffected** — GitHub Pages serves `/1.0.0/` and `301`s the form without a
+trailing slash. This is a local-preview problem, so preview with something else:
+
+```bash
+npx http-server build -c-1
+```
+
+Whatever you deploy to, open **a version landing page** once, deliberately. It is the URL shape nothing
+else on a normal site produces, and the one a reader reaches by picking a version from the dropdown.
+
 ## What is not supported
 
 Versioned i18n. Docusaurus keeps translations under `i18n/<locale>/docusaurus-plugin-content-docs/`,

@@ -18,10 +18,22 @@ npm run build                                     # the four packages
 
 cd examples/docusaurus-classic
 npm ci                                            # its own lockfile — see below
-npm start                                         # or `npm run build && npm run serve`
+npm start                                         # the dev server
 ```
 
 `prestart` and `prebuild` run `docs-overlay materialize` for you.
+
+To look at the built site instead, do **not** use `npm run serve`: `docusaurus serve` is built on
+`serve-handler`, which reads `1.0.0` as a filename with an extension and answers `/1.0.0/` with a 404
+even though `build/1.0.0/index.html` is right there. Pages inside a version are fine, so the site looks
+correct until you use the version dropdown.
+
+```bash
+npm run build
+npx http-server build -c-1
+```
+
+GitHub Pages serves those URLs correctly, so this is a preview problem rather than a deployment one.
 
 ## Why this one has its own lockfile
 

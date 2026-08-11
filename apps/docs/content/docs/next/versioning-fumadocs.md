@@ -191,6 +191,32 @@ Use `staticGET` on a static export: the usual `GET` handler answers one query at
 server at request time, so on GitHub Pages it 404s and the dialog reports "no results" rather than an
 error.
 
+## Check one version URL wherever you host it
+
+A versioned site's URLs contain a path segment made of digits and dots — `/docs/1.0.0/` — and some
+static servers read a dotted segment as a **filename with an extension**. Such a server never looks for
+`index.html` inside the directory, so a version's landing page answers with a directory listing or a 404
+while every page beneath it works. Nothing in the build is wrong when this happens; only the server is.
+
+What has been checked here:
+
+| Serving the export with                        | `/docs/1.0.0/`                                       |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| GitHub Pages                                   | works — and `301`s the form without a trailing slash |
+| `http-server`                                  | works                                                |
+| `next dev`                                     | works, but it is not the export                      |
+| [`serve`](https://www.npmjs.com/package/serve) | **directory listing** — no setting fixes it          |
+| `docusaurus serve`                             | **404** — same library underneath                    |
+
+The last two both use `serve-handler`, which is where the assumption lives. Note what the failure looks
+like: every page _inside_ a version works, so the site seems fine until somebody uses the version
+switcher.
+
+Every other host is untested, so treat this as one thing to try rather than a list to avoid: after your
+first deploy, open **a version landing page**, not just a page inside a version. It is the URL shape
+nothing else on a normal site produces, and the one a reader reaches by picking a version from the
+switcher.
+
 ## Then what
 
 You now have a versioned site with one version in it. From here:
