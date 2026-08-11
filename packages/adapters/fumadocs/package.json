@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-fumadocs",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Versioned documentation for Fumadocs without duplicating it: author only the diff between versions, and one loader() serves every version.",
   "license": "MIT",
   "author": "Olivier Tomé",
