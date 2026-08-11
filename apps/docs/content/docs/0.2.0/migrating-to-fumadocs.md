@@ -77,8 +77,10 @@ current one, `/11.13.0/...` for an older one. Nothing that was linked externally
    - **A line-identical body beats any filename.** A page that moved into a new directory _and_ was
      renamed scores nothing on its name and everything on its content. Trust the content.
 
-   `docs-overlay migrate docusaurus` applies both and asks about what is left. Expect to answer: on the
-   measured corpus, three slugs needed a human, and the answer was "nothing replaces it" all three times.
+   Apply both, then answer the slugs that are left one at a time — and expect **"nothing replaces it"** to
+   be a legitimate answer. On the measured corpus three slugs needed a human, and it was the answer all
+   three times: a tombstone without `replacedBy` tells a reader the page is gone and which version still
+   has it, which beats sending them to a merely adjacent page.
 
 ## Be honest about the payoff
 

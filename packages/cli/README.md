@@ -15,11 +15,12 @@ npm install -D docs-overlay-cli
 ```
 docs-overlay cut <version>             the channel folder becomes that version
 docs-overlay check                     the engine's diagnostics, no framework needed
+docs-overlay prune                     drop files a version repeats byte for byte from what it inherits
 docs-overlay materialize [--check]     write the tree Docusaurus reads   (needs docs-overlay-docusaurus)
 ```
 
-`cut` and `check` are universal. `materialize` loads the Docusaurus adapter through a lazy `import()`, so
-a Fumadocs project installing this to move a folder never pulls Docusaurus knowledge in.
+`cut`, `check` and `prune` are universal. `materialize` loads the Docusaurus adapter through a lazy
+`import()`, so a Fumadocs project installing this to move a folder never pulls Docusaurus knowledge in.
 
 Run `docs-overlay --help` for the flags.
 

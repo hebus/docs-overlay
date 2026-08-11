@@ -20,7 +20,7 @@ snapshot-based versioning tool.
 | [`docs-overlay`](packages/core)                           | The engine. Versions, pages, slugs, metadata, inheritance, resolution. Zero dependencies, no Node built-ins, no framework. |
 | [`docs-overlay-fumadocs`](packages/adapters/fumadocs)     | Fumadocs / Next.js adapter. Re-projects a source the framework already read.                                               |
 | [`docs-overlay-docusaurus`](packages/adapters/docusaurus) | Docusaurus adapter. Plans the tree Docusaurus insists on reading from disk.                                                |
-| [`docs-overlay-cli`](packages/cli)                        | The one command line: `cut`, `check`, `prune`, `materialize`, `migrate docusaurus`.                                        |
+| [`docs-overlay-cli`](packages/cli)                        | The one command line: `cut`, `check`, `prune`, `materialize`.                                                              |
 
 Adapters depend on the core, never the reverse. Adding support for another framework means
 writing an adapter — it must never require a change to the core.

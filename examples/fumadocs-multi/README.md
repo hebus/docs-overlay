@@ -23,4 +23,4 @@ as a folder inside it, and `content/docs/<product>/<version>/…` below that. `l
 worth reading — one `overlaySource()` per product, one `loader()` for all of them.
 
 The step-by-step configuration is on the site, under
-[Several documentations](https://hebus.github.io/docs-overlay/docs/next/multiple-products/).
+[Several documentations](https://hebus.github.io/docs-overlay/docs/multiple-products/).
