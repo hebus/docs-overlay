@@ -1,0 +1,45 @@
+{
+  "name": "docs-overlay-example-docusaurus",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A Docusaurus site whose versions are an overlay: two releases and a channel, materialised before the build.",
+  "scripts": {
+    "materialize": "docs-overlay materialize",
+    "verify": "docs-overlay materialize --check",
+    "check": "docs-overlay check",
+    "prestart": "npm run materialize",
+    "start": "docusaurus start",
+    "prebuild": "npm run materialize",
+    "build": "docusaurus build",
+    "postbuild": "node scripts/assert-output.mjs",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "@mdx-js/react": "^3.1.0",
+    "docs-overlay": "file:../../packages/core",
+    "docs-overlay-docusaurus": "file:../../packages/adapters/docusaurus",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "docs-overlay-cli": "file:../../packages/cli"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  }
+}

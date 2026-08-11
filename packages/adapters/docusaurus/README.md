@@ -227,6 +227,11 @@ the engine. Report them and fail the build on `severity: "error"`; that is the s
 
 ## Documentation
 
+A working site is in
+[`examples/docusaurus-classic`](https://github.com/hebus/docs-overlay/tree/main/examples/docusaurus-classic) —
+two releases and a channel, built with `onBrokenLinks: "throw"`, with 35 assertions against the exported
+HTML. Clone it, `npm ci`, `npm start`.
+
 **[Versioning Docusaurus documentation without snapshots](https://hebus.github.io/docs-overlay/docs/staying-on-docusaurus/)**
 is the walkthrough: moving your snapshots into an overlay, wiring the build, and proving the result did
 not lose anything. The concepts common to every adapter are

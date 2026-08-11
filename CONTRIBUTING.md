@@ -120,16 +120,33 @@ ambient types out of an adapter's own `src` project, in a separate test project 
 with `process` and `Buffer` in scope, "performs no I/O" becomes a stated intention rather than a checkable
 claim.
 
-### A Docusaurus example cannot be a workspace
+### The Docusaurus example is not a workspace
 
-If you add one, exclude it from `workspaces` and give it its own lockfile — the root `package.json`
-already carries `"!examples/docusaurus-classic"` for this. Docusaurus pulls `react-router@5`, npm hoists
-it to the root, and `fumadocs-core` then cannot resolve its own: `npm install` fails with `ERESOLVE`, and
-`--legacy-peer-deps` would hide a real incompatibility across the whole repository. Two frameworks whose
-transitive trees do not belong in one hoisted `node_modules`.
+`examples/docusaurus-classic` is excluded from `workspaces` and has its own lockfile, and it has to stay
+that way. Docusaurus pulls `react-router@5`, npm hoists it to the root, and `fumadocs-core` then cannot
+resolve its own: `npm install` fails with `ERESOLVE`, and `--legacy-peer-deps` would hide a real
+incompatibility across the whole repository. Two frameworks whose transitive trees do not belong in one
+hoisted `node_modules`.
 
-It has to depend on the packages through `file:` links, which has the side benefit of exercising their
-published `exports` maps the way a real consumer does.
+It depends on the packages through `file:` links, which has the side benefit of exercising their
+published `exports` maps the way a real consumer does. Because it is outside the workspaces it needs its
+own install, and the packages have to be built first:
+
+```bash
+npm run build
+npm ci      --prefix examples/docusaurus-classic
+npm run build --prefix examples/docusaurus-classic
+```
+
+Its own workflow, `.github/workflows/docusaurus-example.yml`, runs that on the paths that can affect it,
+rather than adding a second framework's dependency tree to every pull request. It is the only thing that
+proves Docusaurus _accepts_ the tree the adapter plans — the adapter's unit tests describe that tree, and
+a real build with `onBrokenLinks: throw` is what checks it.
+
+One trap worth knowing: `docs-overlay-cli` depends on `docs-overlay@^0.2.0`, so npm may satisfy that from
+the registry instead of the `file:` link once the local version leaves that range — and the example would
+keep passing while testing a published package. Its `assert-output.mjs` asserts that all three packages
+resolve into `packages/`.
 
 ## Migration notes
 

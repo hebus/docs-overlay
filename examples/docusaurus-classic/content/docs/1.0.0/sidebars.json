@@ -1,0 +1,15 @@
+{
+  "docs": [
+    { "type": "doc", "id": "intro" },
+    {
+      "type": "category",
+      "label": "Guide",
+      "items": [
+        { "type": "doc", "id": "guide/getting-started" },
+        { "type": "doc", "id": "guide/old-api" },
+        { "type": "doc", "id": "guide/legacy" }
+      ]
+    },
+    { "type": "doc", "id": "api/reference" }
+  ]
+}
