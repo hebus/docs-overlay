@@ -25,13 +25,36 @@ docs-overlay materialize [--check]     write the tree Docusaurus reads   (needs 
 ```
 
 `cut`, `check` and `prune` are universal — they work on any repository following the folder convention,
-Fumadocs sites included. `materialize` loads the Docusaurus adapter through a lazy `import()`, so a
-Fumadocs project installing this to move a folder never pulls Docusaurus knowledge in.
+Fumadocs sites included, with nothing but this package installed. `materialize` writes the tree a
+framework reads, which is the one job with no framework-neutral form, so it is the only command that needs
+[`docs-overlay-docusaurus`](https://www.npmjs.com/package/docs-overlay-docusaurus) — declared as an
+optional peer dependency, and loaded through `import()` rather than carried in the bundle.
+
+### Dialects
+
+Reading a tree means deciding two things: how a file path becomes a slug, and which file carries the
+navigation. Both are framework-specific, so both are chosen rather than assumed.
+
+```text
+--dialect docusaurus   Docusaurus' own slug rules, and sidebars.json for navigation
+--dialect generic      path-derived slugs, no navigation file
+```
+
+The default is `docusaurus` when the site has a `docusaurus.config.*`, and `generic` otherwise. Every
+command that reads a tree prints which one it used, and why.
+
+This is not cosmetic: the two derive **different** slugs — Docusaurus strips number prefixes and gives
+three different file names the URL of their folder — so reading a Docusaurus tree generically would point
+every overlay directive at a URL that does not exist, with nothing to report, because both sides would look
+internally consistent. Two things keep that from happening quietly. A Docusaurus site whose adapter is not
+installed is an error rather than a silent downgrade to the generic rules. And a `sidebars.json` found
+while reading generically fails the command rather than being carried along as an ordinary file — `prune`
+checks before it removes anything. Pass `--dialect generic` to confirm the generic rules are what you want.
 
 Options common to all four: `--site-dir <path>` (default: the nearest ancestor with a
 `docusaurus.config.*`), `--content-dir <path>` (default: `<site-dir>/content/docs`), `--out-dir <path>`
 (what the tool owns and may delete; default `.docs-overlay`), `--channel <name>` (repeatable, default
-`next`), `--route-base-path <path>`, `--label <id=text>` (repeatable), `--json`.
+`next`), `--route-base-path <path>`, `--label <id=text>` (repeatable), `--dialect <name>`, `--json`.
 
 An unknown flag is an **error**, not a warning. A mistyped `--dry-run` that silently did the real work
 is the one failure this tool cannot afford.
