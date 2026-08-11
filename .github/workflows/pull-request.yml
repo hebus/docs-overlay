@@ -1,7 +1,13 @@
-name: PR CI
+name: CI
 
 on:
   pull_request:
+    branches:
+      - main
+  # Also on `main` itself, so the badge in the readme has a branch result to report. A merge has
+  # already been verified as a pull request, so this run is redundant by design — it exists to make
+  # the claim "these checks pass on main" checkable rather than asserted.
+  push:
     branches:
       - main
   # So the whole chain can be exercised against `main` without opening a pull request.
