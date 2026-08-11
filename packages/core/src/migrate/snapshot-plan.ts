@@ -187,7 +187,7 @@ export function planSnapshots(snapshots: readonly Snapshot[], options: SnapshotP
   for (const [key, file] of base.own) folded.set(key, { file, definedIn: base.version });
 
   const decisions = new Map<string, SnapshotDecision>();
-  for (const decision of options.decisions ?? []) decisions.set(`${decision.version} ${decision.slug}`, decision);
+  for (const decision of options.decisions ?? []) decisions.set(`${decision.version}\u0000${decision.slug}`, decision);
 
   for (const current of indexed.slice(1)) {
     const renamesByPath = new Map<string, SlugKey[]>();
@@ -208,7 +208,7 @@ export function planSnapshots(snapshots: readonly Snapshot[], options: SnapshotP
 
     for (const key of goneKeys) {
       const previous = folded.get(key)!;
-      const goneBody = bodyOf(`${previous.definedIn} ${key}`, previous.file);
+      const goneBody = bodyOf(`${previous.definedIn}\u0000${key}`, previous.file);
       const goneSlug = slugify(previous.file.path);
 
       const candidates: CandidateInput[] = [];
@@ -221,13 +221,13 @@ export function planSnapshots(snapshots: readonly Snapshot[], options: SnapshotP
         candidates.push({
           slug: slugify(file.path),
           path: file.path,
-          body: bodyOf(`${current.version} ${candidateKey}`, file),
+          body: bodyOf(`${current.version}\u0000${candidateKey}`, file),
           existedInParent
         });
       }
 
       const ranking = rankCandidates(goneBody, goneSlug, candidates, weights, thresholds);
-      const decided = decisions.get(`${current.version} ${key}`);
+      const decided = decisions.get(`${current.version}\u0000${key}`);
 
       const asTombstone = (replacedBy?: SlugKey | undefined): SnapshotStep => ({
         kind: "tombstone",
@@ -406,5 +406,5 @@ function emptyStats(): SnapshotStats {
 
 /** Convenience for a caller holding slugs rather than keys. */
 export function decisionKey(version: VersionId, slug: Slug | SlugKey): string {
-  return `${version} ${toSlugKey(slug)}`;
+  return `${version}\u0000${toSlugKey(slug)}`;
 }
