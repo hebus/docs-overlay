@@ -1,16 +1,17 @@
 /**
- * Theme resolution. `minimal` is still unwritten and deliberately not named here: a name that resolved
- * to something else would ship the wrong look and say nothing about it.
+ * Theme resolution. A name that resolved to something else would ship the wrong look and say nothing
+ * about it, so an unknown one raises.
  */
 
 import { MermaidError } from "../errors.js";
 import { illustratedTheme } from "./illustrated.js";
+import { minimalTheme } from "./minimal.js";
 import { technicalTheme } from "./technical.js";
 import type { DiagramTheme } from "./theme.js";
 
-export type DiagramThemeName = "technical" | "illustrated";
+export type DiagramThemeName = "minimal" | "technical" | "illustrated";
 
-const THEMES: Readonly<Record<DiagramThemeName, DiagramTheme>> = { technical: technicalTheme, illustrated: illustratedTheme };
+const THEMES: Readonly<Record<DiagramThemeName, DiagramTheme>> = { minimal: minimalTheme, technical: technicalTheme, illustrated: illustratedTheme };
 
 export function resolveTheme(theme: DiagramThemeName | DiagramTheme | undefined): DiagramTheme {
   if (theme === undefined) return technicalTheme;

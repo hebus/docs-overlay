@@ -135,12 +135,22 @@ twice. A grid solved from the hints is both simpler and deterministic.
 
 ## Themes
 
-Two themes ship. Every diagram on this page uses `technical`, which is flat: hairline borders, no
-shadow, an accent stripe carrying the semantic type. `illustrated` draws the same diagram as cards —
-the icon on a tinted plate, a soft shadow, a wider radius, more air:
+Three themes ship. Every diagram on this page uses `technical`, which is flat: hairline borders, no
+shadow, an accent stripe carrying the semantic type. `illustrated` draws the same diagram as cards — the
+icon on a tinted plate, a soft shadow, a wider radius, more air. `minimal` removes the decoration
+instead of restyling it: no icon, no bar, one ink colour.
 
 ```ts
 await renderMermaid(source, { theme: "illustrated" });
+```
+
+This page also shows the reason `stylesheet` exists. Inlined, a theme's rules are the largest part of a
+small diagram — 4.3 kB against about 2 kB of drawing — and four diagrams meant four copies. The remark
+plugin asks for `stylesheet: "external"` and emits the sheet once at the top of the page, which took
+this page from 227.9 kB to 202.1 kB:
+
+```ts
+const { svg } = await renderMermaid(fence.source, { theme: "technical", stylesheet: "external" });
 ```
 
 Either way, every colour is read through a CSS custom property with the theme value as its fallback, so

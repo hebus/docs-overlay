@@ -6,7 +6,8 @@ import { enrichMermaid } from "../../semantic/enrich.js";
 import { architectures, flowcharts } from "../../testing/fixtures.js";
 import type { RenderOptions, RenderResult } from "../renderer.js";
 import { roundedPath } from "./edge.js";
-import { renderSvg } from "./render.js";
+import { diagramStylesheet, renderSvg, scopeOf } from "./render.js";
+import { technicalTheme } from "../../themes/technical.js";
 
 const render = async (source: string, options: RenderOptions = {}): Promise<RenderResult> =>
   renderSvg(layoutDiagram(enrichMermaid(await parseMermaid(source)), { theme: options.theme }), options);
@@ -151,9 +152,9 @@ describe("renderSvg", () => {
   });
 
   it("refuses a theme it does not have", async () => {
-    // Falling back silently would ship the wrong look and say nothing about it. `minimal` is the one
-    // still unwritten, so it is the honest example of a name that must not resolve.
-    await expect(render(flowcharts.lr, { theme: "minimal" as "technical" })).rejects.toThrow(/no theme called/);
+    // Falling back silently would ship the wrong look and say nothing about it. All three shipped
+    // themes now resolve, so the name here has to be one that genuinely does not exist.
+    await expect(render(flowcharts.lr, { theme: "sketchy" as "technical" })).rejects.toThrow(/no theme called/);
   });
 });
 
@@ -163,6 +164,116 @@ describe("renderSvg", () => {
  * know `technical` came out unchanged was to diff its output against the published package. This makes
  * that check part of the suite instead of a thing somebody remembers to do.
  */
+describe("diagramStylesheet", () => {
+  /*
+   * Inlined, these rules are the largest part of a small diagram, and a page with ten diagrams repeats
+   * them ten times. This is the way out for a caller that can put CSS on the page once.
+   */
+  it("is what the inline mode embeds, so the two cannot drift", async () => {
+    const { svg } = await render(flowcharts.lr, { theme: "technical" });
+    const embedded = /<style>([\s\S]*?)<\/style>/.exec(svg)?.[1] ?? "";
+    expect(embedded).not.toBe("");
+    expect(diagramStylesheet("technical")).toBe(embedded);
+  });
+
+  it("omits the style element when the caller takes it", async () => {
+    const external = await render(flowcharts.lr, { stylesheet: "external" });
+    expect(external.svg).not.toContain("<style>");
+    // Still scoped by the same class, so the sheet the caller emits still matches.
+    expect(external.svg).toContain(scopeOf(technicalTheme));
+  });
+
+  /*
+   * Measured, not hoped for: the sheet is 4.3 kB, so it is 70% of a two-node diagram and 43% of a
+   * five-node one. On a page of four it takes 29.7 kB down to 16.7 kB. The threshold here is the
+   * smaller of the two savings, so the test says something true about the worst case.
+   */
+  it("takes a third off a diagram that is mostly drawing", async () => {
+    const inline = await render(flowcharts.lr);
+    const external = await render(flowcharts.lr, { stylesheet: "external" });
+    expect(external.svg.length).toBeLessThan(inline.svg.length * 0.6);
+
+    const two = "flowchart LR\n A --> B";
+    const small = await render(two);
+    const smallExternal = await render(two, { stylesheet: "external" });
+    expect(smallExternal.svg.length).toBeLessThan(small.svg.length * 0.35);
+  });
+
+  it("changes nothing but the style element", async () => {
+    const inline = await render(flowcharts.lr);
+    const external = await render(flowcharts.lr, { stylesheet: "external" });
+    expect(inline.svg.replace(/<style>[\s\S]*?<\/style>/, "")).toBe(external.svg);
+    expect([external.width, external.height]).toEqual([inline.width, inline.height]);
+  });
+
+  it("answers for a theme object as well as a name", () => {
+    expect(diagramStylesheet(technicalTheme)).toBe(diagramStylesheet("technical"));
+    expect(diagramStylesheet(undefined)).toBe(diagramStylesheet("technical"));
+  });
+
+  it("gives two themes two scopes, so both sheets can sit on one page", () => {
+    expect(diagramStylesheet("illustrated")).not.toBe(diagramStylesheet("technical"));
+    expect(diagramStylesheet("illustrated")).toContain("do-diagram-illustrated");
+    expect(diagramStylesheet("illustrated")).not.toContain("do-diagram-technical");
+  });
+});
+
+describe("the minimal theme", () => {
+  /*
+   * Very little decoration, read subtractively: no icon, no accent bar, no shadow, no plate. What is
+   * left is the shape, the label and the line.
+   */
+  it("draws no decoration at all", async () => {
+    const { svg } = await render(flowcharts.lr, { theme: "minimal" });
+    expect(svg).not.toContain('class="do-icon"');
+    expect(svg).not.toContain('class="do-accent"');
+    expect(svg).not.toContain("do-icon-plate");
+    expect(svg).not.toContain("<filter");
+    expect(svg).not.toContain("<clipPath");
+  });
+
+  it("still draws every node, edge and label", async () => {
+    const { svg } = await render(flowcharts.lr, { theme: "minimal" });
+    expect(svg.match(/class="do-node /g)).toHaveLength(5);
+    expect(svg.match(/class="do-edge do-edge-/g)).toHaveLength(4);
+    for (const label of ["Developer", "Angular", "REST API", "PostgreSQL", "Redis"]) expect(svg).toContain(`>${label}</tspan>`);
+  });
+
+  // The semantic pass still ran: a site that wants the colour back can restyle these classes without
+  // regenerating anything.
+  it("keeps the semantic class even though it paints nothing with it", async () => {
+    const { svg } = await render(flowcharts.lr, { theme: "minimal" });
+    expect(svg).toContain("do-type-database");
+    expect(svg).toContain("do-type-cache");
+  });
+
+  /*
+   * With no stripe, no plate and no icons, nothing reads `--do-accent` — so the fifteen per-type
+   * declarations are dead CSS, and this sheet is the largest part of a small diagram. Minimal in bytes,
+   * not only in ink.
+   */
+  it("omits the accent declarations nothing would read", async () => {
+    const sheet = diagramStylesheet("minimal");
+    expect(sheet).not.toContain("--do-accent:");
+    expect(diagramStylesheet("technical")).toContain("--do-accent:");
+    expect(sheet.length).toBeLessThan(diagramStylesheet("technical").length * 0.7);
+  });
+
+  it("comes out smaller than the theme it strips down", async () => {
+    const bare = await render(flowcharts.lr, { theme: "minimal" });
+    const flat = await render(flowcharts.lr, { theme: "technical" });
+    expect(bare.svg.length).toBeLessThan(flat.svg.length);
+    expect(bare.width).toBeLessThan(flat.width);
+  });
+
+  it("keeps every promise the others keep", async () => {
+    const { svg } = await render(flowcharts.quotedLabel, { theme: "minimal" });
+    expect(svg).not.toContain("<script");
+    expect(svg).toContain('role="img"');
+    expect(svg).toContain("@media (prefers-color-scheme:dark)");
+  });
+});
+
 describe("the technical theme", () => {
   it("renders exactly what it rendered before", async () => {
     const { svg } = await render(flowcharts.lr, { theme: "technical" });
