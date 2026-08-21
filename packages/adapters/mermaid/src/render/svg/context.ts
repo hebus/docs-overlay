@@ -18,3 +18,8 @@ export interface SvgContext {
 
 /** The accent of the node's semantic type, set per node by a class in the stylesheet. */
 export const ACCENT = "var(--do-accent)";
+
+/** Suffixed with the instance, like every other id, so two diagrams on a page keep their own filter. */
+export function shadowId(instance: string): string {
+  return `do-shadow-${instance}`;
+}

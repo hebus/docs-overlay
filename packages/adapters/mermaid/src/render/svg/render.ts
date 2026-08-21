@@ -17,6 +17,7 @@ import type { ColorToken, DiagramTheme, ThemeColors } from "../../themes/theme.j
 import { CSS_VARIABLES } from "../../themes/theme.js";
 import type { RenderOptions, RenderResult } from "../renderer.js";
 import type { SvgContext } from "./context.js";
+import { shadowId } from "./context.js";
 import { renderEdge, renderMarkers } from "./edge.js";
 import { attributes, escapeSvgText, safeIdentifier } from "./escape.js";
 import { renderGroup } from "./group.js";
@@ -41,7 +42,7 @@ export function renderSvg(layout: LayoutResult, options: RenderOptions = {}): Re
     `<title ${attributes({ id: titleId })}>${escapeSvgText(described.title)}</title>`,
     `<desc ${attributes({ id: descId })}>${escapeSvgText(described.description)}</desc>`,
     `<style>${stylesheet(theme, scope)}</style>`,
-    `<defs>${renderMarkers(context)}</defs>`,
+    `<defs>${renderMarkers(context)}${shadowFilter(context)}</defs>`,
     `<g ${attributes({ class: "do-groups" })}>${layout.groups.map(group => renderGroup(group, context)).join("")}</g>`,
     `<g ${attributes({ class: "do-edges" })}>${layout.edges.map(edge => renderEdge(edge, context)).join("")}</g>`,
     `<g ${attributes({ class: "do-nodes" })}>${layout.nodes.map(node => renderNode(node, context)).join("")}</g>`
@@ -62,6 +63,21 @@ export function renderSvg(layout: LayoutResult, options: RenderOptions = {}): Re
   return { svg, width: layout.width, height: layout.height };
 }
 
+/**
+ * The drop shadow, as a filter, once per document. `flood-opacity` carries the strength rather than a
+ * colour, so the shadow stays a neutral darkening and does not fight the palette in dark mode.
+ */
+function shadowFilter(context: SvgContext): string {
+  const shadow = context.theme.node.shadow;
+  if (shadow === undefined) return "";
+
+  return (
+    `<filter ${attributes({ id: shadowId(context.instance), x: "-20%", y: "-20%", width: "140%", height: "140%" })}>` +
+    `<feDropShadow ${attributes({ dx: 0, dy: shadow.dy, stdDeviation: shadow.blur, "flood-color": "#0f172a", "flood-opacity": shadow.opacity })}/>` +
+    `</filter>`
+  );
+}
+
 /** `var(--token, fallback)` against a specific palette, so the dark block can re-emit with dark fallbacks. */
 function against(colors: ThemeColors): (name: ColorToken) => string {
   return name => `var(${CSS_VARIABLES[name]}, ${colors[name]})`;
@@ -71,7 +87,7 @@ function rules(theme: DiagramTheme, colors: ThemeColors, scope: string): string 
   const color = against(colors);
   const selector = (suffix: string): string => `.${scope} ${suffix}`;
 
-  const base = [
+  const base: string[] = [
     `${selector(".do-shape")}{fill:${color("nodeBg")};stroke:${color("nodeBorder")};stroke-width:${theme.node.borderWidth}}`,
     `${selector(".do-shape-line")}{fill:none;stroke:${color("nodeBorder")};stroke-width:${theme.node.borderWidth}}`,
     `${selector(".do-junction")}{fill:${color("edge")};stroke:none}`,
@@ -84,6 +100,10 @@ function rules(theme: DiagramTheme, colors: ThemeColors, scope: string): string 
     `${selector(".do-label")}{fill:${color("fg")}}`,
     `${selector(".do-group-label")},${selector(".do-edge-label")}{fill:${color("muted")}}`
   ];
+
+  // Only when the theme draws one. A rule nobody references is dead weight in every SVG the theme
+  // emits, and this stylesheet is already the largest part of a small diagram.
+  if (theme.node.iconPlate !== undefined) base.push(`${selector(".do-icon-plate")}{fill:var(--do-accent,${color("accent")});stroke:none}`);
 
   const accents = Object.entries(theme.semanticTypes).map(entry => {
     const [type, value] = entry as [SemanticNodeType, { readonly accent: string }];
