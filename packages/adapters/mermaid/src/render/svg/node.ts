@@ -144,7 +144,7 @@ export function renderNode(placed: LayoutNode, context: SvgContext): string {
     return wrap(node, parts.join(""));
   }
 
-  if (STRIPED.includes(node.shape) && node.type !== "unknown") {
+  if (theme.node.accentStripe !== false && STRIPED.includes(node.shape) && node.type !== "unknown") {
     // A stripe on the leading edge, clipped by the node's own outline so it follows the corner radius
     // instead of approximating it — the approximation was wrong whenever the radius exceeded the
     // stripe width, which is every default theme. It repeats the icon's information on purpose: a

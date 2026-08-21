@@ -79,10 +79,13 @@ a label that contains `--` cannot use the inline-label form.
 
 ## Themes
 
-Two themes ship. `technical` is flat: hairline borders, no shadow, an accent stripe carrying the
-semantic type — the density that suits a dense flowchart. `illustrated` draws the same diagram as
-cards: the icon sits on a tinted plate, boxes have a soft shadow and a generous radius, and everything
-gets more air.
+Three themes ship.
+
+| Theme         | Look                                                                                           |
+| ------------- | ---------------------------------------------------------------------------------------------- |
+| `minimal`     | decoration removed: no icon, no accent bar, no shadow, a hairline border, one ink colour       |
+| `technical`   | flat, with an accent stripe carrying the semantic type — the default                           |
+| `illustrated` | the same diagram as cards: the icon on a tinted plate, a soft shadow, a wider radius, more air |
 
 ```ts
 await renderMermaid(source, { theme: "illustrated" });
@@ -91,9 +94,26 @@ await renderMermaid(source, { theme: "illustrated" });
 Neither adds gradients, hand-drawn outlines or a second colour per node: each would date the output,
 and a diagram in documentation outlives the styling fashion it was drawn in.
 
-`minimal` is not written yet, and asking for it raises rather than falling back — a silent substitution
-would ship the wrong look and say nothing. A theme is plain data, so a `DiagramTheme` of your own can be
-passed where a name goes.
+Asking for a theme that does not exist raises rather than falling back — a silent substitution would
+ship the wrong look and say nothing. A theme is plain data, so a `DiagramTheme` of your own can be
+passed where a name goes; `NodeTheme` carries the switches the shipped themes use (`icons`,
+`accentStripe`, `shadow`, `iconPlate`), and a theme that sets none of them emits no filter, no plate and
+no rule for either.
+
+### One stylesheet per page
+
+The theme's rules are the largest part of a small diagram — around 4.3 kB against 2 kB of drawing — and
+inlining them repeats them in every diagram on the page. A caller that can put CSS on the page once:
+
+```ts
+import { diagramStylesheet, renderMermaid } from "docs-overlay-mermaid";
+
+const css = diagramStylesheet("technical"); // emit once, in a <style> or a stylesheet
+const { svg } = await renderMermaid(source, { stylesheet: "external" });
+```
+
+`"inline"` stays the default, because an SVG opened on its own has nowhere else to carry its styles.
+`scopeOf(theme)` names the class every rule is scoped to, if you need to target it.
 
 Every colour is read through a CSS custom property with the theme value as its fallback, so a site
 restyles a diagram it did not generate:
@@ -234,7 +254,7 @@ release and the test suite.
 
 ## Roadmap
 
-- **0.2** — a richer icon set, a `minimal` theme, an extractable stylesheet
+- **0.3** — a richer icon set, and per-diagram theme overrides
 - **0.3** — `sequenceDiagram`, `classDiagram`, `stateDiagram`
 - **0.4** — an Excalidraw renderer, through the same `DiagramRenderer` seam
 

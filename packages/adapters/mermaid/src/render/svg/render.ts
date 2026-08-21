@@ -2,16 +2,22 @@
  * The SVG document. Paint order is groups, then edges, then nodes: a node must cover the line that
  * ends at it, and a group must sit behind both.
  *
- * The stylesheet is emitted inside the SVG and every selector is scoped to a class on the root
- * element. An inline `<style>` in inline SVG is document-global — unscoped rules named `.do-node`
- * would style somebody else's markup — and the scope is the theme name rather than a random id so
- * two diagrams sharing a theme emit byte-identical rules.
+ * Every selector is scoped to a class on the root element. An inline `<style>` in inline SVG is
+ * document-global — unscoped rules named `.do-node` would style somebody else's markup — and the scope
+ * is the theme name rather than a random id, so two diagrams sharing a theme emit byte-identical rules
+ * and one copy of the stylesheet serves both.
+ *
+ * Which is the point of `stylesheet: "external"`. Inlined, these rules are the largest part of a small
+ * diagram — around 4 kB against 2 kB of drawing — and a page with ten diagrams repeats them ten times.
+ * A caller that can put CSS on the page once asks for `"external"` and emits `diagramStylesheet(theme)`
+ * itself. `"inline"` stays the default: a lone SVG opened from disk has nowhere else to carry it.
  */
 
 import { describe } from "../../accessibility/describe.js";
 import { defaultIconRegistry } from "../../icons/registry.js";
 import type { LayoutResult } from "../../model/layout.js";
 import type { SemanticNodeType } from "../../model/semantic.js";
+import type { DiagramThemeName } from "../../themes/registry.js";
 import { resolveTheme } from "../../themes/registry.js";
 import type { ColorToken, DiagramTheme, ThemeColors } from "../../themes/theme.js";
 import { CSS_VARIABLES } from "../../themes/theme.js";
@@ -25,7 +31,7 @@ import { renderNode } from "./node.js";
 
 export function renderSvg(layout: LayoutResult, options: RenderOptions = {}): RenderResult {
   const theme = resolveTheme(options.theme);
-  const scope = `do-diagram-${safeIdentifier(theme.name)}`;
+  const scope = scopeOf(theme);
   const described = describe(layout, options.accessibility);
 
   const context: SvgContext = {
@@ -41,7 +47,7 @@ export function renderSvg(layout: LayoutResult, options: RenderOptions = {}): Re
   const body = [
     `<title ${attributes({ id: titleId })}>${escapeSvgText(described.title)}</title>`,
     `<desc ${attributes({ id: descId })}>${escapeSvgText(described.description)}</desc>`,
-    `<style>${stylesheet(theme, scope)}</style>`,
+    options.stylesheet === "external" ? "" : `<style>${rulesFor(theme, scope)}</style>`,
     `<defs>${renderMarkers(context)}${shadowFilter(context)}</defs>`,
     `<g ${attributes({ class: "do-groups" })}>${layout.groups.map(group => renderGroup(group, context)).join("")}</g>`,
     `<g ${attributes({ class: "do-edges" })}>${layout.edges.map(edge => renderEdge(edge, context)).join("")}</g>`,
@@ -105,15 +111,39 @@ function rules(theme: DiagramTheme, colors: ThemeColors, scope: string): string 
   // emits, and this stylesheet is already the largest part of a small diagram.
   if (theme.node.iconPlate !== undefined) base.push(`${selector(".do-icon-plate")}{fill:var(--do-accent,${color("accent")});stroke:none}`);
 
-  const accents = Object.entries(theme.semanticTypes).map(entry => {
-    const [type, value] = entry as [SemanticNodeType, { readonly accent: string }];
-    return `${selector(`.do-type-${type}`)}{--do-accent:${value.accent}}`;
-  });
+  // `--do-accent` is read by the stripe, the plate and an icon's stroke. A theme that draws none of the
+  // three would ship fifteen declarations nothing consults — and this sheet is the largest part of a
+  // small diagram, so a rule that does nothing is not free.
+  const usesAccent =
+    theme.node.accentStripe !== false ||
+    theme.node.iconPlate !== undefined ||
+    (theme.node.icons !== false && Object.values(theme.semanticTypes).some(entry => entry.icon !== undefined));
+
+  const accents = usesAccent
+    ? Object.entries(theme.semanticTypes).map(entry => {
+        const [type, value] = entry as [SemanticNodeType, { readonly accent: string }];
+        return `${selector(`.do-type-${type}`)}{--do-accent:${value.accent}}`;
+      })
+    : [];
 
   return [...base, ...accents].join("");
 }
 
-function stylesheet(theme: DiagramTheme, scope: string): string {
+/**
+ * The stylesheet for a theme, for a caller emitting it once on the page. Identical to what `"inline"`
+ * would have embedded, so the two modes cannot drift: there is one implementation.
+ */
+export function diagramStylesheet(theme: DiagramThemeName | DiagramTheme | undefined): string {
+  const resolved = resolveTheme(theme);
+  return rulesFor(resolved, scopeOf(resolved));
+}
+
+/** The class that scopes every rule, and that `renderSvg` puts on the root element. */
+export function scopeOf(theme: DiagramTheme): string {
+  return `do-diagram-${safeIdentifier(theme.name)}`;
+}
+
+function rulesFor(theme: DiagramTheme, scope: string): string {
   const root = `.${scope}{font-family:${theme.text.fontFamily};background:${against(theme.colors)("bg")}}`;
   const dark = `@media (prefers-color-scheme:dark){${rules(theme, theme.darkColors, scope)}}`;
   // Light is the base declaration and dark overrides it, so a viewer with no preference gets light and

@@ -69,6 +69,20 @@ export interface NodeTheme {
   readonly junctionRadius: number;
   readonly shadow?: ShadowTheme | undefined;
   readonly iconPlate?: IconPlateTheme | undefined;
+  /**
+   * The accent bar on the leading edge. Defaults to drawn. A theme that turns it off and draws no
+   * icons uses the semantic accent for nothing, and the renderer then omits the per-type rules too.
+   */
+  readonly accentStripe?: boolean | undefined;
+  /**
+   * Whether to draw icons at all. Defaults to yes.
+   *
+   * This has to live on the theme rather than be inferred from `semanticTypes`, because by the time a
+   * node reaches the renderer the semantic stage has already written an icon name onto it — a default
+   * rule that matched "PostgreSQL" carries `database` regardless of theme. The semantic model proposes
+   * and the theme disposes; without this flag the theme had no way to say no.
+   */
+  readonly icons?: boolean | undefined;
 }
 
 export interface EdgeTheme {

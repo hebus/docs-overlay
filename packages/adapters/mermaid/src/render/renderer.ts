@@ -46,6 +46,13 @@ export interface RenderOptions {
   readonly tolerant?: boolean | undefined;
   readonly fallback?: FallbackRenderer | undefined;
   readonly cache?: DiagramCache | undefined;
+  /**
+   * Where the theme's CSS goes. `"inline"`, the default, embeds it in every SVG — the only thing that
+   * works for an SVG that will be opened on its own. `"external"` leaves it out, and the caller emits
+   * `diagramStylesheet(theme)` once on the page; on a page with several diagrams that is most of the
+   * bytes.
+   */
+  readonly stylesheet?: "inline" | "external" | undefined;
 }
 
 export interface DiagramRenderer {

@@ -346,7 +346,7 @@ And what it costs you instead, because this is not free either:
 
 ## How this is verified
 
-- **613 tests across 43 files** (Vitest). The core's fixtures are TypeScript factories, never files on
+- **625 tests across 42 files** (Vitest). The core's fixtures are TypeScript factories, never files on
   disk — it is filesystem-free and its tests stay that way. The CLI, which is the only package that
   writes anything, is tested against a real tree on a real disk.
 - **Three end-to-end suites assert the exported HTML** of three built sites, one per framework path:
