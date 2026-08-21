@@ -45,6 +45,28 @@ npm run check:journal          # refuses a journal that could have been reconstr
 npm run check:coverage         # refuses documentation that dropped a judgement or a pitfall
 ```
 
+## Branch protection on `main`
+
+A pull request is required, with **zero approving reviews**: GitHub forbids approving your own, and on a
+single-maintainer repository requiring one would block everything. `enforce_admins` is off so the owner
+cannot lock themselves out. No force-push, no deletion. Linear history is deliberately _not_ required —
+every merge here is a merge commit.
+
+**Only `verify` and `sites` are required checks, and the other two must never be added.** The failure
+mode is silent and total: a pull request that can never merge, with nothing on the page explaining why.
+
+- `verify` and `sites` come from `pull-request.yml`, which triggers on every pull request to `main` with
+  no `paths` filter. They always run, so requiring them is safe.
+- `check` (`changeset-check.yml`) skips itself for the `changeset-release/main` branch and for titles
+  containing `#skip-changeset`. Requiring it would block **every version pull request** — the one that
+  bumps the versions and writes the changelogs, which is how each release starts.
+- `build` (`docusaurus-example.yml`) has a `paths` filter, so on a pull request that touches none of them
+  the workflow never starts and the check never reports. A required check that never reports waits
+  forever.
+
+A new job added to `pull-request.yml` can be required, because that workflow has no filters. Anything
+guarded by `if:` or `paths:` cannot.
+
 ## Releasing
 
 CI never publishes. It only keeps the "chore: version packages" pull request up to date; merging
