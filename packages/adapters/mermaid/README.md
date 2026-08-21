@@ -79,9 +79,21 @@ a label that contains `--` cannot use the inline-label form.
 
 ## Themes
 
-`technical` is the theme that ships today: flat fills, a hairline border, and an accent that carries
-the semantic type. `minimal` and `illustrated` are planned, and asking for one raises rather than
-falling back — a silent substitution would ship the wrong look and say nothing.
+Two themes ship. `technical` is flat: hairline borders, no shadow, an accent stripe carrying the
+semantic type — the density that suits a dense flowchart. `illustrated` draws the same diagram as
+cards: the icon sits on a tinted plate, boxes have a soft shadow and a generous radius, and everything
+gets more air.
+
+```ts
+await renderMermaid(source, { theme: "illustrated" });
+```
+
+Neither adds gradients, hand-drawn outlines or a second colour per node: each would date the output,
+and a diagram in documentation outlives the styling fashion it was drawn in.
+
+`minimal` is not written yet, and asking for it raises rather than falling back — a silent substitution
+would ship the wrong look and say nothing. A theme is plain data, so a `DiagramTheme` of your own can be
+passed where a name goes.
 
 Every colour is read through a CSS custom property with the theme value as its fallback, so a site
 restyles a diagram it did not generate:
@@ -222,7 +234,7 @@ release and the test suite.
 
 ## Roadmap
 
-- **0.2** — the `illustrated` theme, a richer icon set, custom themes
+- **0.2** — a richer icon set, a `minimal` theme, an extractable stylesheet
 - **0.3** — `sequenceDiagram`, `classDiagram`, `stateDiagram`
 - **0.4** — an Excalidraw renderer, through the same `DiagramRenderer` seam
 

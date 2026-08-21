@@ -151,9 +151,72 @@ describe("renderSvg", () => {
   });
 
   it("refuses a theme it does not have", async () => {
-    // `illustrated` is planned, not shipped. Falling back silently would ship the wrong look and say
-    // nothing about it.
-    await expect(render(flowcharts.lr, { theme: "illustrated" as "technical" })).rejects.toThrow(/no theme called/);
+    // Falling back silently would ship the wrong look and say nothing about it. `minimal` is the one
+    // still unwritten, so it is the honest example of a name that must not resolve.
+    await expect(render(flowcharts.lr, { theme: "minimal" as "technical" })).rejects.toThrow(/no theme called/);
+  });
+});
+
+/*
+ * A snapshot exists here for one reason: adding a theme must not change an existing one. When
+ * `illustrated` was added it needed two new mechanisms and a change to node sizing, and the only way to
+ * know `technical` came out unchanged was to diff its output against the published package. This makes
+ * that check part of the suite instead of a thing somebody remembers to do.
+ */
+describe("the technical theme", () => {
+  it("renders exactly what it rendered before", async () => {
+    const { svg } = await render(flowcharts.lr, { theme: "technical" });
+    await expect(svg).toMatchFileSnapshot("./__snapshots__/technical.svg");
+  });
+});
+
+describe("the illustrated theme", () => {
+  it("renders the same diagram through a different look", async () => {
+    const flat = await render(flowcharts.lr, { theme: "technical" });
+    const card = await render(flowcharts.lr, { theme: "illustrated" });
+    expect(card.svg).not.toBe(flat.svg);
+    // Same nodes and edges: a theme changes the drawing, never the diagram.
+    expect(card.svg.match(/class="do-node /g)).toHaveLength(flat.svg.match(/class="do-node /g)?.length ?? 0);
+    expect(card.svg.match(/class="do-edge do-edge-/g)).toHaveLength(flat.svg.match(/class="do-edge do-edge-/g)?.length ?? 0);
+  });
+
+  it("scopes its stylesheet under its own name, so both can sit on one page", async () => {
+    const card = await render(flowcharts.lr, { theme: "illustrated" });
+    expect(card.svg).toContain("do-diagram-illustrated");
+    expect(card.svg).not.toContain("do-diagram-technical");
+  });
+
+  it("draws an icon plate and a shadow, which the flat theme does not", async () => {
+    const card = await render(flowcharts.lr, { theme: "illustrated" });
+    const flat = await render(flowcharts.lr, { theme: "technical" });
+    expect(card.svg).toContain('class="do-icon-plate"');
+    expect(card.svg).toMatch(/<filter id="do-shadow-\w+"/);
+    expect(card.svg).toMatch(/class="do-shape" [^>]*filter="url\(#do-shadow-/);
+    // A flat theme must not pay for a filter it never references.
+    expect(flat.svg).not.toContain("do-icon-plate");
+    expect(flat.svg).not.toContain("<filter");
+  });
+
+  it("gives the plate room instead of letting it sit under the label", async () => {
+    const flat = await render(flowcharts.lr, { theme: "technical" });
+    const card = await render(flowcharts.lr, { theme: "illustrated" });
+    // The plate is wider than the bare icon, so every box has to grow with it.
+    expect(card.width).toBeGreaterThan(flat.width);
+  });
+
+  it("keeps every promise the flat theme keeps", async () => {
+    const card = await render(flowcharts.quotedLabel, { theme: "illustrated" });
+    expect(card.svg).not.toContain("<script");
+    expect(card.svg).not.toMatch(/\son[a-z]+=/i);
+    expect(card.svg).toContain('role="img"');
+    expect(card.svg).toContain("@media (prefers-color-scheme:dark)");
+    for (const variable of Object.values(CSS_VARIABLES)) expect(card.svg, variable).toContain(`var(${variable},`);
+  });
+
+  it("is deterministic too", async () => {
+    const first = await render(architectures.nested, { theme: "illustrated" });
+    const second = await render(architectures.nested, { theme: "illustrated" });
+    expect(second.svg).toBe(first.svg);
   });
 });
 

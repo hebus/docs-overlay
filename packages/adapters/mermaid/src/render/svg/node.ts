@@ -7,10 +7,10 @@
  * lets a site restyle a diagram it did not generate.
  */
 
-import { iconOf } from "../../layout/node-size.js";
+import { iconExtent, iconOf } from "../../layout/node-size.js";
 import type { NodeShape } from "../../model/diagram.js";
 import type { LayoutNode } from "../../model/layout.js";
-import { ACCENT } from "./context.js";
+import { ACCENT, shadowId } from "./context.js";
 import type { SvgContext } from "./context.js";
 import { attributes, round, safeIdentifier } from "./escape.js";
 import { renderIcon } from "./icon.js";
@@ -114,16 +114,26 @@ export function renderNode(placed: LayoutNode, context: SvgContext): string {
     return wrap(node, silhouette(placed, context, { class: "do-junction" }));
   }
 
-  const parts: string[] = [silhouette(placed, context, { class: "do-shape" }), decorations(placed)];
+  const shadow = theme.node.shadow === undefined ? undefined : `url(#${shadowId(context.instance)})`;
+  const parts: string[] = [silhouette(placed, context, { class: "do-shape", filter: shadow }), decorations(placed)];
 
   if (node.shape === "service") {
     if (icon !== undefined) {
-      parts.push(renderIcon(icon, context.icons, { x: x + (width - iconSize) / 2, y: y + theme.node.paddingY, size: iconSize, stroke: ACCENT }));
+      const extent = iconExtent(theme);
+      parts.push(iconPlate(context, x + (width - extent) / 2, y + theme.node.paddingY, extent));
+      parts.push(
+        renderIcon(icon, context.icons, {
+          x: x + (width - iconSize) / 2,
+          y: y + theme.node.paddingY + (extent - iconSize) / 2,
+          size: iconSize,
+          stroke: ACCENT
+        })
+      );
     }
     parts.push(
       renderText(label, {
         x: x + width / 2,
-        y: y + theme.node.paddingY + (icon === undefined ? 0 : iconSize + theme.node.iconGap),
+        y: y + theme.node.paddingY + (icon === undefined ? 0 : iconExtent(theme) + theme.node.iconGap),
         fontSize: theme.text.fontSize,
         lineHeight: theme.text.lineHeight,
         fill: context.color("fg"),
@@ -146,11 +156,13 @@ export function renderNode(placed: LayoutNode, context: SvgContext): string {
     );
   }
 
-  const iconWidth = icon === undefined ? 0 : iconSize + theme.node.iconGap;
+  const extent = iconExtent(theme);
+  const iconWidth = icon === undefined ? 0 : extent + theme.node.iconGap;
   const startX = x + (width - (iconWidth + label.width)) / 2;
 
   if (icon !== undefined) {
-    parts.push(renderIcon(icon, context.icons, { x: startX, y: y + (height - iconSize) / 2, size: iconSize, stroke: ACCENT }));
+    parts.push(iconPlate(context, startX, y + (height - extent) / 2, extent));
+    parts.push(renderIcon(icon, context.icons, { x: startX + (extent - iconSize) / 2, y: y + (height - iconSize) / 2, size: iconSize, stroke: ACCENT }));
   }
 
   parts.push(
@@ -166,6 +178,13 @@ export function renderNode(placed: LayoutNode, context: SvgContext): string {
   );
 
   return wrap(node, parts.join(""));
+}
+
+/** Nothing when the theme asks for no plate, which is what keeps a flat theme byte-for-byte flat. */
+function iconPlate(context: SvgContext, x: number, y: number, side: number): string {
+  const plate = context.theme.node.iconPlate;
+  if (plate === undefined) return "";
+  return `<rect ${attributes({ class: "do-icon-plate", x, y, width: side, height: side, rx: plate.radius, opacity: plate.opacity })}/>`;
 }
 
 function wrap(node: LayoutNode["node"], body: string): string {

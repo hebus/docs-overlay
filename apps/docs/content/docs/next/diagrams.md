@@ -135,8 +135,16 @@ twice. A grid solved from the hints is both simpler and deterministic.
 
 ## Themes
 
-`technical` is the theme that ships today. Every colour is read through a CSS custom property with the
-theme value as its fallback, so this site restyles diagrams it did not generate:
+Two themes ship. Every diagram on this page uses `technical`, which is flat: hairline borders, no
+shadow, an accent stripe carrying the semantic type. `illustrated` draws the same diagram as cards —
+the icon on a tinted plate, a soft shadow, a wider radius, more air:
+
+```ts
+await renderMermaid(source, { theme: "illustrated" });
+```
+
+Either way, every colour is read through a CSS custom property with the theme value as its fallback, so
+this site restyles diagrams it did not generate:
 
 ```css
 :root {

@@ -78,6 +78,7 @@ export { escapeSvgText } from "./render/svg/escape.js";
 export { defaultRules } from "./semantic/default-rules.js";
 export { enrichMermaid } from "./semantic/enrich.js";
 export { resolveTheme } from "./themes/registry.js";
+export { illustratedTheme } from "./themes/illustrated.js";
 export { technicalTheme } from "./themes/technical.js";
 export { CSS_VARIABLES } from "./themes/theme.js";
 

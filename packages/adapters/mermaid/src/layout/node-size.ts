@@ -26,6 +26,15 @@ export function iconOf(node: SemanticNode, theme: DiagramTheme): string | undefi
   return node.icon ?? theme.semanticTypes[node.type].icon;
 }
 
+/**
+ * How much room the icon occupies, plate included. Shared with the renderer on purpose: if the two
+ * disagreed by a pixel the icon would sit off-centre in a box sized for a different icon.
+ */
+export function iconExtent(theme: DiagramTheme): number {
+  const plate = theme.node.iconPlate;
+  return plate === undefined ? theme.node.iconSize : theme.node.iconSize + plate.padding * 2;
+}
+
 export function sizeNode(node: SemanticNode, theme: DiagramTheme, measure?: MeasureText): SizedNode {
   const { node: box, text } = theme;
 
@@ -42,18 +51,19 @@ export function sizeNode(node: SemanticNode, theme: DiagramTheme, measure?: Meas
   });
 
   const hasIcon = iconOf(node, theme) !== undefined;
+  const extent = iconExtent(theme);
 
   // An `architecture-beta` service stacks its icon above its label; every other shape puts it beside.
   if (node.shape === "service") {
-    const width = Math.max(box.minWidth, Math.max(label.width, box.iconSize) + box.paddingX * 2);
-    const height = box.paddingY * 2 + (hasIcon ? box.iconSize + box.iconGap : 0) + label.height;
+    const width = Math.max(box.minWidth, Math.max(label.width, extent) + box.paddingX * 2);
+    const height = box.paddingY * 2 + (hasIcon ? extent + box.iconGap : 0) + label.height;
     return { width: round(width), height: round(Math.max(box.minHeight, height)), label };
   }
 
-  const inner = label.width + (hasIcon ? box.iconSize + box.iconGap : 0);
+  const inner = label.width + (hasIcon ? extent + box.iconGap : 0);
   const slack = SLACK[node.shape] ?? 1;
   const width = Math.max(box.minWidth, (inner + box.paddingX * 2) * slack);
-  const height = Math.max(box.minHeight, label.height + box.paddingY * 2);
+  const height = Math.max(box.minHeight, Math.max(label.height, hasIcon ? extent : 0) + box.paddingY * 2);
 
   if (node.shape === "circle") {
     const side = Math.max(width, height);

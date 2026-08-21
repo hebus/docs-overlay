@@ -32,6 +32,28 @@ export type ColorToken = keyof typeof CSS_VARIABLES;
 
 export type ThemeColors = Readonly<Record<ColorToken, string>>;
 
+/**
+ * A soft drop shadow, emitted as an SVG filter. Optional because a flat theme must not pay for a
+ * `<filter>` it never references, and because a shadow is the one decoration that costs rendering
+ * time in a browser rather than only bytes.
+ */
+export interface ShadowTheme {
+  readonly dy: number;
+  readonly blur: number;
+  readonly opacity: number;
+}
+
+/**
+ * A tinted rounded square behind the icon. It reads as a small badge rather than a loose glyph, which
+ * is most of what separates an illustrated node from a plain one — and it changes the node's width, so
+ * the layout has to know about it too.
+ */
+export interface IconPlateTheme {
+  readonly radius: number;
+  readonly opacity: number;
+  readonly padding: number;
+}
+
 export interface NodeTheme {
   readonly paddingX: number;
   readonly paddingY: number;
@@ -45,6 +67,8 @@ export interface NodeTheme {
   readonly iconGap: number;
   /** An `architecture-beta` junction: a dot, drawn at this radius. */
   readonly junctionRadius: number;
+  readonly shadow?: ShadowTheme | undefined;
+  readonly iconPlate?: IconPlateTheme | undefined;
 }
 
 export interface EdgeTheme {
