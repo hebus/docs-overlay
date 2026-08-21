@@ -30,7 +30,7 @@ npm test                       # vitest; `npm run test:watch` while working
 And for anything touching the published surface:
 
 ```bash
-npm run build                  # the four packages: vite (esm) + tsc (d.ts)
+npm run build                  # every published package: vite (esm) + tsc (d.ts)
 npm run typecheck:packaged     # validates the exports maps
 npm run verify:independence    # runs the core with no node_modules
 npm run build:example          # end-to-end assertions on the exported HTML
@@ -57,8 +57,8 @@ npm run release
 ```
 
 It builds, re-checks the packaged types and the core's independence, publishes each pending package
-to npmjs and pushes one tag per package — `docs-overlay@0.1.0`, since Changesets bumps the four
-packages independently and they will drift apart.
+to npmjs and pushes one tag per package — `docs-overlay@0.1.0`, since Changesets bumps each
+package independently and they will drift apart.
 
 Two refusals worth knowing about, because both protect the same thing — that npm, the changelog and
 git describe the same tree:

@@ -4,7 +4,7 @@ The documentation site for `docs-overlay`, versioned with `docs-overlay`. It is 
 dogfooding, so the rules below are the product's rules rather than this app's conventions.
 
 ```bash
-npm run build          # from the repository root: the four packages first
+npm run build          # from the repository root: the packages first
 npm run build:docs     # this site
 ```
 

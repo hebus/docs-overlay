@@ -272,6 +272,38 @@ pulls Docusaurus knowledge in.
 
 Every flag is in the [CLI readme](packages/cli#readme).
 
+## Also in this repository
+
+[`docs-overlay-mermaid`](packages/adapters/mermaid#readme) has nothing to do with versioning. It turns
+a Mermaid source into a modern technical SVG **at build time, without a browser** — the gap the
+existing options leave, which is either shipping the Mermaid bundle to the reader or driving a headless
+Chromium through `rehype-mermaid`.
+
+```bash
+npm install docs-overlay-mermaid
+```
+
+```ts
+import { renderMermaid } from "docs-overlay-mermaid";
+
+const { svg } = await renderMermaid(`
+  flowchart LR
+    Developer --> Angular
+    Angular --> API
+    API --> PostgreSQL
+    API --> Redis
+`);
+```
+
+`PostgreSQL` comes out drawn as a database and `Redis` as a cache, with nothing annotated: between the
+parser and the renderer sits a semantic model, and that is what a theme draws. No JavaScript reaches
+the reader, no request is made during the build, and the same input always produces the same bytes.
+
+It **does not depend on `docs-overlay`** and knows nothing about versioned documentation — it lives
+here to share the build, the release and the test suite. Its
+[readme](packages/adapters/mermaid#readme) states the Mermaid subset it covers, which is deliberately
+smaller than all of Mermaid.
+
 ## Where this pays off
 
 **A library with a supported-version policy.** Readers need the documentation that matches the version
@@ -314,7 +346,7 @@ And what it costs you instead, because this is not free either:
 
 ## How this is verified
 
-- **375 tests across 28 files** (Vitest). The core's fixtures are TypeScript factories, never files on
+- **602 tests across 42 files** (Vitest). The core's fixtures are TypeScript factories, never files on
   disk — it is filesystem-free and its tests stay that way. The CLI, which is the only package that
   writes anything, is tested against a real tree on a real disk.
 - **Three end-to-end suites assert the exported HTML** of three built sites, one per framework path:
@@ -333,6 +365,11 @@ And what it costs you instead, because this is not free either:
   `dependencies` _and_ `peerDependencies` to be empty; the same treatment for the Docusaurus adapter's
   "performs no I/O"; and `npm run verify:independence`, which packs the core with `npm pack` and runs a
   probe against it in a temporary directory with **no `node_modules` at all**.
+- **`docs-overlay-mermaid` proves it needs no browser the same way:** a static test forbids every
+  framework and `node:*` import, pins its two dependencies exactly, and refuses any occurrence of
+  `window`, `document`, `HTMLElement`, `customElements`, `navigator` or `localStorage` in the shipped
+  sources — a DOM dependency there would mean the package no longer renders at build time, which is the
+  only reason it exists. Its layout is asserted deterministic, because every snapshot depends on it.
 - `npm run typecheck:packaged` typechecks the adapters against the **built** `.d.ts` with no source
   alias in play, which is what validates the published `exports` maps.
 - A performance guard: 10 versions × 500 pages fold in under a second, and 10 000 `resolve()` calls
