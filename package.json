@@ -23,11 +23,11 @@
     "!examples/docusaurus-classic"
   ],
   "scripts": {
-    "build": "npm run build -w docs-overlay -w docs-overlay-fumadocs -w docs-overlay-docusaurus -w docs-overlay-cli",
+    "build": "npm run build -w docs-overlay -w docs-overlay-fumadocs -w docs-overlay-docusaurus -w docs-overlay-cli -w docs-overlay-mermaid",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -p packages/core && tsc -p packages/core/test && tsc -p packages/adapters/fumadocs && tsc -p packages/adapters/docusaurus && tsc -p packages/adapters/docusaurus/test && tsc -p packages/cli",
-    "typecheck:packaged": "tsc -p packages/adapters/fumadocs/tsconfig.packaged.json && tsc -p packages/adapters/docusaurus/tsconfig.packaged.json && tsc -p packages/cli/tsconfig.packaged.json",
+    "typecheck": "tsc -p packages/core && tsc -p packages/core/test && tsc -p packages/adapters/fumadocs && tsc -p packages/adapters/docusaurus && tsc -p packages/adapters/docusaurus/test && tsc -p packages/cli && tsc -p packages/adapters/mermaid && tsc -p packages/adapters/mermaid/test",
+    "typecheck:packaged": "tsc -p packages/adapters/fumadocs/tsconfig.packaged.json && tsc -p packages/adapters/docusaurus/tsconfig.packaged.json && tsc -p packages/cli/tsconfig.packaged.json && tsc -p packages/adapters/mermaid/tsconfig.packaged.json",
     "verify:independence": "node scripts/verify-independence.mjs",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",

@@ -1,0 +1,9 @@
+{
+  // Separate project so `src/` never gets Node's ambient types: with `document` or `process` in
+  // scope there, "this renderer needs no DOM" would be an intention rather than a checkable claim.
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["."]
+}

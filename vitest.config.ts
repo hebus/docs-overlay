@@ -20,7 +20,8 @@ export default defineConfig({
     alias: {
       "docs-overlay": source("./packages/core/src/index.ts"),
       "docs-overlay-docusaurus": source("./packages/adapters/docusaurus/src/index.ts"),
-      "docs-overlay-fumadocs": source("./packages/adapters/fumadocs/src/index.ts")
+      "docs-overlay-fumadocs": source("./packages/adapters/fumadocs/src/index.ts"),
+      "docs-overlay-mermaid": source("./packages/adapters/mermaid/src/index.ts")
     }
   },
   test: {

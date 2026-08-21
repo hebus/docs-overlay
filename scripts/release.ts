@@ -29,8 +29,12 @@ const REGISTRY = "https://registry.npmjs.org/";
 const DRY_RUN = process.argv.includes("--dry-run");
 const ASSUME_YES = process.argv.includes("--yes");
 
-/** Publishable workspaces, in dependency order: every adapter depends on the core. */
-const PACKAGES = ["packages/core", "packages/adapters/fumadocs", "packages/adapters/docusaurus", "packages/cli"];
+/**
+ * Publishable workspaces, in dependency order: the core first, then everything that depends on it.
+ * `docs-overlay-mermaid` depends on neither, so its position is free — it renders Mermaid and knows
+ * nothing about versioned documentation.
+ */
+const PACKAGES = ["packages/core", "packages/adapters/fumadocs", "packages/adapters/docusaurus", "packages/cli", "packages/adapters/mermaid"];
 
 interface Manifest {
   readonly name: string;
