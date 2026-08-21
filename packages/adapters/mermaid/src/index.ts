@@ -73,12 +73,13 @@ export { defaultIcons } from "./icons/default-icons.js";
 export { layoutDiagram } from "./layout/layout.js";
 export { estimateTextWidth, measureLabel, wrapText } from "./layout/measure-text.js";
 export { parseMermaid, parserFor } from "./parser/registry.js";
-export { renderSvg } from "./render/svg/render.js";
+export { diagramStylesheet, renderSvg, scopeOf } from "./render/svg/render.js";
 export { escapeSvgText } from "./render/svg/escape.js";
 export { defaultRules } from "./semantic/default-rules.js";
 export { enrichMermaid } from "./semantic/enrich.js";
 export { resolveTheme } from "./themes/registry.js";
 export { illustratedTheme } from "./themes/illustrated.js";
+export { minimalTheme } from "./themes/minimal.js";
 export { technicalTheme } from "./themes/technical.js";
 export { CSS_VARIABLES } from "./themes/theme.js";
 

@@ -23,6 +23,9 @@ export interface SizedNode {
 const SLACK: Readonly<Record<string, number>> = { rhombus: 1.5, hexagon: 1.2, circle: 1.15, stadium: 1.1 };
 
 export function iconOf(node: SemanticNode, theme: DiagramTheme): string | undefined {
+  // The theme's veto comes first: the semantic stage has already written a name onto the node, so
+  // emptying `semanticTypes` would not have been enough to stop an icon being drawn.
+  if (theme.node.icons === false) return undefined;
   return node.icon ?? theme.semanticTypes[node.type].icon;
 }
 
