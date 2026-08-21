@@ -79,8 +79,10 @@ JISON grammar inside `mermaid` needs a DOM. So this package brings its own, over
   browser to mean anything
 - **Frontmatter**, `%%` comments, and `;` as a line separator
 
-Outside that, it raises rather than guesses. Node ids are `[A-Za-z0-9_.]` plus anything above ASCII;
-a label that contains `--` cannot use the inline-label form.
+Outside that, it raises rather than guesses. Node ids are `[A-Za-z0-9_.]` plus anything above ASCII, and
+may contain a hyphen where a word character follows it — `user-service` is an id, while `A-->B` is still a
+link. A label containing `--` has to be quoted, `A -- "a--b" --> B`, or use the pipe form,
+`A -->|a--b| B`; unquoted it is read as a link and the rest of the label becomes a node.
 
 ## Themes
 

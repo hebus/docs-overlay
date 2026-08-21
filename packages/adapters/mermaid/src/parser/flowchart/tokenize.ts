@@ -55,6 +55,8 @@ const SHAPES: readonly (readonly [string, string, NodeShape])[] = [
 
 /** Word characters plus a dot, plus anything above ASCII so accented and CJK ids work. */
 const ID = /[\w.À-￿]/;
+/** The same without the dot, for deciding whether a hyphen continues an id or starts a link. */
+const ID_WORD = /[\wÀ-￿]/;
 const LINK_BODY = /[-=.]/;
 const ARROW_TIP: Readonly<Record<string, EdgeArrow>> = { ">": "arrow", o: "circle", x: "cross" };
 
@@ -156,7 +158,26 @@ function readLabel(text: string, start: number, closer: string, line: number): {
 
 function readNode(text: string, start: number, line: number): { readonly token: NodeToken; readonly end: number } {
   let index = start;
-  while (index < text.length && ID.test(text.charAt(index))) index += 1;
+  /*
+   * `user-service --> api-gateway` is idiomatic Mermaid, and it used to be a syntax error here: the id
+   * stopped at the hyphen and the rest of the word was read as a broken link.
+   *
+   * A hyphen continues the id when a word character follows it. Two in a row cannot, which is what keeps
+   * `A-->B` from being read as an id called `A--`; and the following character must be a word character
+   * rather than any id character, because a dot is one and `x-.->y` is a dotted link, not an id `x-.`.
+   */
+  while (index < text.length) {
+    const char = text.charAt(index);
+    if (ID.test(char)) {
+      index += 1;
+      continue;
+    }
+    if (char === "-" && ID_WORD.test(text.charAt(index + 1))) {
+      index += 1;
+      continue;
+    }
+    break;
+  }
   const id = text.slice(start, index);
   if (id === "") {
     throw new MermaidError("flowchart-syntax", `Expected a node id on line ${line}, found \`${text.slice(start).trim() || "end of line"}\`.`, {
@@ -220,6 +241,15 @@ const LABEL_OPENERS: readonly string[] = ["--", "-.", "=="];
  */
 function findInlineLabel(text: string, from: number): InlineLabel | undefined {
   for (let index = from; index < text.length; index += 1) {
+    // A quoted label is opaque: without this, the `--` inside `-- "a--b" -->` closes the link early and
+    // the remainder becomes a phantom node. Quoting is Mermaid's own escape hatch for a label with
+    // special characters in it, so it has to work here.
+    if (text.charAt(index) === '"') {
+      const close = text.indexOf('"', index + 1);
+      if (close === -1) break;
+      index = close;
+      continue;
+    }
     if (!LINK_BODY.test(text.charAt(index))) continue;
 
     let bodyEnd = index;

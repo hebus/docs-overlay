@@ -155,6 +155,33 @@ Some prose.`
 /** Every bug becomes a named source here before it becomes a fix. */
 export const regressions = {
   /**
+   * `user-service --> api-gateway` is idiomatic Mermaid and used to be a syntax error: the id stopped at
+   * the hyphen and `-service --> api-gateway` was read as a broken link. Probably the most common thing
+   * a real diagram would have hit.
+   */
+  hyphenatedIds: `flowchart LR
+    user-service["User service"] --> api-gateway["Gateway"]
+    api-gateway --> user-db["PostgreSQL"]`,
+
+  /**
+   * The forms a hyphen must *not* be swallowed by, each of which the fix could have broken: a link with
+   * no spaces around it, a dotted one, and a thick one. The dot matters because it is an id character,
+   * so the lookahead after a hyphen has to be narrower than the id set itself.
+   */
+  hyphenAgainstLinks: `flowchart LR
+    a-b-->c-d
+    x-.->y
+    p==>q`,
+
+  /**
+   * An unquoted `--` inside an inline label silently produced a phantom node — `A -- a--b --> B` came out
+   * as three nodes, `A`, `b` and `B`. Quoting is Mermaid's own escape hatch for a label with special
+   * characters, and the scanner now steps over a quoted span instead of finding the `--` inside it.
+   */
+  dashesInQuotedLabel: `flowchart LR
+    A -- "a--b" --> B`,
+
+  /**
    * `b` has no edge at all, so it used to become its own connected component and get packed to the
    * right of `out` — leaving group `g`'s box spanning a service that is not in it. Nothing in the
    * source asks for that: `b` can sit under `a`.
