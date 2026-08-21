@@ -6,7 +6,8 @@ const LINKS = [
   { label: "docs-overlay", href: "https://www.npmjs.com/package/docs-overlay" },
   { label: "docs-overlay-fumadocs", href: "https://www.npmjs.com/package/docs-overlay-fumadocs" },
   { label: "docs-overlay-docusaurus", href: "https://www.npmjs.com/package/docs-overlay-docusaurus" },
-  { label: "docs-overlay-cli", href: "https://www.npmjs.com/package/docs-overlay-cli" }
+  { label: "docs-overlay-cli", href: "https://www.npmjs.com/package/docs-overlay-cli" },
+  { label: "docs-overlay-mermaid", href: "https://www.npmjs.com/package/docs-overlay-mermaid" }
 ];
 
 export function Footer() {

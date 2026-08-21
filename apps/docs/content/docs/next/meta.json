@@ -1,0 +1,24 @@
+{
+  "pages": [
+    "index",
+    "---Start here---",
+    "versioning-fumadocs",
+    "staying-on-docusaurus",
+    "cli",
+    "---Concepts---",
+    "authoring",
+    "resolution",
+    "---Several packages---",
+    "multiple-products",
+    "versioning-in-a-monorepo",
+    "versioning-npm-package-docs",
+    "---Migrating---",
+    "migrating-to-fumadocs",
+    "---Also here---",
+    "diagrams",
+    "---Internals---",
+    "architecture",
+    "adapters",
+    "..."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  // No `paths` at all: this package does not depend on `docs-overlay`. It parses Mermaid and emits
+  // SVG, which has nothing to do with versioned documentation — it lives here to share the build,
+  // the release script and the test suite, not because it sits on top of the engine.
+  "extends": "../../../tsconfig.base.json",
+  "include": ["src"]
+}

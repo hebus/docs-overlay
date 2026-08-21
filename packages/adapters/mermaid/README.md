@@ -1,0 +1,231 @@
+# docs-overlay-mermaid
+
+[![npm](https://img.shields.io/npm/v/docs-overlay-mermaid)](https://www.npmjs.com/package/docs-overlay-mermaid)
+[![types](https://img.shields.io/npm/types/docs-overlay-mermaid)](https://www.npmjs.com/package/docs-overlay-mermaid)
+[![license](https://img.shields.io/npm/l/docs-overlay-mermaid)](./LICENSE)
+
+Mermaid in, a modern technical SVG out — at build time, with no browser.
+
+```ts
+import { renderMermaid } from "docs-overlay-mermaid";
+
+const { svg } = await renderMermaid(`
+  flowchart LR
+    Developer --> Angular
+    Angular --> API
+    API --> PostgreSQL
+    API --> Redis
+`);
+```
+
+`PostgreSQL` comes out drawn as a database, `Redis` as a cache, `Developer` as a person. Nobody
+annotated anything: the package reads the labels.
+
+## Why this exists
+
+Rendering Mermaid is a solved problem — twice over. You can ship the Mermaid bundle to the reader's
+browser, or render at build time with `rehype-mermaid`, which drives a headless Chromium through
+Playwright. Both work.
+
+What neither does is produce an SVG at build time **without a browser**. This does. The output is
+static HTML: no JavaScript reaches the reader, no network request happens during the build, and the
+same input always produces the same bytes.
+
+The second thing it does is the reason it is not just a converter. Between the parser and the
+renderer sits a **semantic model** — a node is a `database`, an `api`, a `person` — and that is what
+a theme draws. Adding a renderer that is not SVG means implementing one interface, not touching the
+parser.
+
+## Install
+
+```bash
+npm install docs-overlay-mermaid
+```
+
+You do not need `mermaid` itself. `@mermaid-js/parser`, Mermaid's own grammar package, is pulled in
+for `architecture-beta` and loaded lazily, so a bundle that only renders flowcharts never pays for
+it.
+
+## What it renders
+
+| Diagram                                                        | Support                                     |
+| -------------------------------------------------------------- | ------------------------------------------- |
+| `flowchart` / `graph`                                          | a documented subset, below                  |
+| `architecture-beta`                                            | full, through Mermaid's own Langium grammar |
+| `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram` | not yet — see [Fallback](#fallback)         |
+
+Anything else raises a `MermaidError` whose `code` says which of the two cases it is: a diagram type
+that is recognised but unsupported, or text that is not a diagram at all.
+
+### The flowchart subset
+
+Mermaid has no standalone flowchart parser — `@mermaid-js/parser` does not cover flowcharts, and the
+JISON grammar inside `mermaid` needs a DOM. So this package brings its own, over a stated subset:
+
+- **Header** `flowchart` or `graph`, direction `TB` / `TD` / `BT` / `RL` / `LR`
+- **Shapes** `[rect]` `(round)` `([stadium])` `[[subroutine]]` `[(cylinder)]` `((circle))`
+  `{rhombus}` `{{hexagon}}`
+- **Links** `-->` `---` `-.->` `-.-` `==>` `===` `--o` `--x` `<-->` `o--o` `x--x`
+- **Link labels** `-->|text|` and `-- text -->`
+- **Chains** `A --> B --> C`, and fan-out `A & B --> C & D`
+- **Subgraphs** `subgraph id [Title] … end`, nested
+- **Classes** `classDef`, `class a,b name`, `A:::name` — carried through as opaque names
+- **Ignored, on purpose** `style`, `linkStyle`, `click`, `direction`, `%%{init}%%`: all of them need a
+  browser to mean anything
+- **Frontmatter**, `%%` comments, and `;` as a line separator
+
+Outside that, it raises rather than guesses. Node ids are `[A-Za-z0-9_.]` plus anything above ASCII;
+a label that contains `--` cannot use the inline-label form.
+
+## Themes
+
+`technical` is the theme that ships today: flat fills, a hairline border, and an accent that carries
+the semantic type. `minimal` and `illustrated` are planned, and asking for one raises rather than
+falling back — a silent substitution would ship the wrong look and say nothing.
+
+Every colour is read through a CSS custom property with the theme value as its fallback, so a site
+restyles a diagram it did not generate:
+
+```css
+:root {
+  --docs-overlay-diagram-node-bg: #fff;
+  --docs-overlay-diagram-node-border: #e2e8f0;
+  --docs-overlay-diagram-fg: #1f2933;
+  --docs-overlay-diagram-muted: #5c6b7a;
+  --docs-overlay-diagram-edge: #94a3b8;
+  --docs-overlay-diagram-accent: #2f6feb;
+  --docs-overlay-diagram-group-bg: #f8fafc;
+  --docs-overlay-diagram-group-border: #e2e8f0;
+  --docs-overlay-diagram-bg: transparent;
+}
+```
+
+A dark palette ships with the SVG under `prefers-color-scheme: dark`, so a diagram opened straight
+from disk is readable either way — and a site with its own theme toggle overrides the properties and
+wins over the media query.
+
+## Semantic nodes
+
+```ts
+type SemanticNodeType =
+  | "person" | "application" | "frontend" | "backend" | "api" | "server"
+  | "database" | "cache" | "queue" | "cloud" | "storage" | "service"
+  | "component" | "file" | "unknown";
+```
+
+Resolved in this order:
+
+1. **What the source states.** `service db(database)[Store]` is a database whatever its label says.
+2. **Your rules.**
+3. **The defaults** — `Postgres`, `Redis`, `Kafka`, `GraphQL`, `Angular`, `Developer` and so on.
+4. **`unknown`**, which is always drawn, never dropped.
+
+The defaults match on word boundaries, and they abstain on a label that reads like prose:
+"Database migration guide" is a documentation page, and drawing a disk next to it is worse than
+drawing nothing, because a reader trusts the icon.
+
+### Custom rules
+
+```ts
+await renderMermaid(source, {
+  semantic: {
+    rules: [{ match: node => node.id === "payments", type: "service", icon: "credit-card" }]
+  },
+  icons: extendIconRegistry([{ id: "credit-card", viewBox: "0 0 24 24", content: "<rect …/>" }])
+});
+```
+
+`semantic.disableDefaults: true` drops the built-in rules entirely.
+
+## Accessibility
+
+Every SVG carries `role="img"`, `aria-labelledby`, a `<title>` and a `<desc>`. `title` and `accDescr`
+from the source are used when present; otherwise the description is generated from the relationships,
+because a diagram announced only as "image" tells a reader nothing about a drawing whose entire
+content is which box connects to which.
+
+```ts
+await renderMermaid(source, { accessibility: { title: "…", description: "…" } });
+```
+
+## SSR
+
+No `window`, no `document`, no `HTMLElement`, no filesystem, no network — asserted by a test, not just
+intended. `<foreignObject>` is never emitted, so the output survives being put in an `<img>`, a PDF or
+a thumbnail, which a Mermaid SVG does not.
+
+Text is measured from a glyph-advance table, since without a DOM there is nobody to ask. It runs a few
+percent generous on purpose — a box slightly too large looks deliberate, one slightly too small clips
+the label. Pass `measureText` to use real metrics where you have them.
+
+## Streaming Markdown
+
+A diagram arriving a few lines at a time is a syntax error at every intermediate step. `tolerant`
+renders what parses and drops what does not, so a half-delivered diagram does not take the page down:
+
+```ts
+await renderMermaid(partial, { tolerant: true });
+```
+
+Debouncing and caching are the caller's; `cache` takes any `get`/`set` pair.
+
+## Fallback
+
+For a diagram type this package does not support, hand it something that does — client-side Mermaid, a
+code block, whatever fits. That is what keeps `mermaid` out of this package's dependencies:
+
+```ts
+await renderMermaid(source, { fallback: { render: source => ({ svg: asCodeBlock(source), width: 0, height: 0 }) } });
+```
+
+## API
+
+```ts
+renderMermaid(source, options?): Promise<RenderResult>   // the facade
+parseMermaid(source, options?): Promise<MermaidDiagram>  // source → normalized model
+enrichMermaid(diagram, options?): SemanticDiagram        // + semantic types and icons
+layoutDiagram(diagram, options?): LayoutResult           // + coordinates
+renderSvg(layout, options?): RenderResult                // + markup
+detectDiagramType(source): MermaidDiagramType            // without parsing
+```
+
+`renderMermaid` is only the convenient order to call the others in; every stage is exported so an
+integrator can step into the middle of the pipeline. Parsing is asynchronous because Mermaid's Langium
+grammar is; the three stages after it are synchronous and pure.
+
+Errors are one class, `MermaidError`, with a `code` from a documented union — switch on the code, not
+on `instanceof`.
+
+## Architecture
+
+```text
+source
+  → DiagramParser        one per dialect: a tokenizer for flowchart, Langium for architecture
+      MermaidDiagram     the normalized model — no Mermaid AST past this line
+  → enrichMermaid        source metadata → your rules → defaults → unknown
+      SemanticDiagram
+  → LayoutEngine         dagre for flowchart, a deterministic grid for architecture
+      LayoutResult       final coordinates; the renderer decides nothing
+  → DiagramRenderer      SVG today
+      RenderResult
+```
+
+Architecture diagrams are laid out on a grid solved from the side hints the author wrote —
+`db:R -- L:server` means "server is to the right of db". Mermaid feeds those to a force-directed
+engine, which looks good and is not reproducible; a grid is both simpler and deterministic.
+
+## Relationship to docs-overlay
+
+None, technically: this package does not depend on `docs-overlay` and works on its own in Node, a
+browser, a CLI or any static site generator. It lives in that repository to share the build, the
+release and the test suite.
+
+## Roadmap
+
+- **0.2** — the `illustrated` theme, a richer icon set, custom themes
+- **0.3** — `sequenceDiagram`, `classDiagram`, `stateDiagram`
+- **0.4** — an Excalidraw renderer, through the same `DiagramRenderer` seam
+
+## License
+
+MIT

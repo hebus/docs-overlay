@@ -14,7 +14,7 @@ From the repository root, because the example consumes the workspace packages:
 
 ```bash
 npm ci
-npm run build                    # the four packages
+npm run build                    # the packages first
 npm run build:example:multi      # this site, plus its end-to-end assertions
 npm --prefix examples/fumadocs-multi start
 ```

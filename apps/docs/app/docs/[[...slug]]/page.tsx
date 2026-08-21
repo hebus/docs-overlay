@@ -7,6 +7,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 
 import { resolveRoute, staticParams } from "docs-overlay-fumadocs";
 
+import { Diagram } from "@/components/diagram";
 import { withBasePath } from "@/lib/base-path";
 import { canonicalUrlOf } from "@/lib/canonical";
 import { InheritedNotice } from "@/lib/inherited-notice";
@@ -71,7 +72,7 @@ export default async function Page(props: { params: Promise<{ slug?: string[] }>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>
         {overlay.inheritedNotice && route.inheritedFrom !== undefined ? <InheritedNotice from={route.inheritedFrom} /> : null}
-        <MDX components={{ ...defaultMdxComponents, a: createRelativeLink(source, page) }} />
+        <MDX components={{ ...defaultMdxComponents, a: createRelativeLink(source, page), Diagram }} />
       </DocsBody>
     </DocsPage>
   );

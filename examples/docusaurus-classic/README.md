@@ -14,7 +14,7 @@ and needs their `dist/`:
 
 ```bash
 npm ci
-npm run build                                     # the four packages
+npm run build                                     # the packages first
 
 cd examples/docusaurus-classic
 npm ci                                            # its own lockfile — see below
