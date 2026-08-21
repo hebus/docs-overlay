@@ -1,5 +1,21 @@
 # docs-overlay-mermaid
 
+## 0.3.0
+
+### Minor Changes
+
+- dc3d6b3: Add the `minimal` theme, and let a theme decide whether icons are drawn at all.
+
+  `minimal` is decoration removed rather than restyled: no icon, no accent bar, no shadow, no plate, a hairline border and one ink colour. It is also the smallest of the three in bytes — with nothing reading `--do-accent`, the renderer omits the fifteen per-type declarations as well.
+
+  `NodeTheme` gains `icons` and `accentStripe`, both defaulting to on. `icons` has to be a theme decision rather than an absence in `semanticTypes`: the semantic stage writes an icon name onto a node before the renderer sees it — a default rule matching "PostgreSQL" carries `database` whatever the theme says — so without the flag a theme had no way to decline. The semantic model proposes; the theme disposes.
+
+- dc3d6b3: Add `diagramStylesheet(theme)` and `RenderOptions.stylesheet`, so a page with several diagrams carries the CSS once.
+
+  Inlined, the theme's rules are the largest part of a small diagram — 4.3 kB against about 2 kB of drawing — and every diagram repeated them. `stylesheet: "external"` leaves the `<style>` element out and the caller emits `diagramStylesheet(theme)` once; `scopeOf(theme)` names the class every rule is scoped to. `"inline"` remains the default, because an SVG opened on its own has nowhere else to carry its styles.
+
+  Measured on the documentation site, whose Diagrams page renders four: 227.9 kB to 202.1 kB. On a two-node diagram the SVG drops by 70%.
+
 ## 0.2.1
 
 ### Patch Changes
