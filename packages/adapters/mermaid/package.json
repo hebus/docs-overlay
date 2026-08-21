@@ -1,6 +1,6 @@
 {
   "name": "docs-overlay-mermaid",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Mermaid to modern technical SVG: a semantic diagram model and a DOM-free renderer, so diagrams ship as HTML instead of a browser bundle.",
   "license": "MIT",
   "author": "Olivier Tomé",
