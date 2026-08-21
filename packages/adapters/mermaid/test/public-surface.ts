@@ -1,0 +1,98 @@
+/**
+ * The published surface, restated so a compiler checks it.
+ *
+ * `ShadowTheme` and `IconPlateTheme` shipped in 0.2.0 as documented-but-absent: the readme and the
+ * changelog both promised them, the barrel never re-exported them, and nothing failed — `tsc` only sees
+ * a package's own sources, and no test can observe a missing *type* export at runtime.
+ *
+ * So the guard has to be compile-time and has to go through the barrel. This file exports nothing
+ * useful; it exists so that `tsc -p packages/adapters/mermaid/test` fails the moment a name the
+ * documentation promises stops resolving. Add a name here whenever the documentation gains one.
+ */
+
+export type {
+  AccessibilityOptions,
+  AlignmentKind,
+  Box,
+  ColorToken,
+  Described,
+  DiagramAlignment,
+  DiagramCache,
+  DiagramDirection,
+  DiagramErrorCode,
+  DiagramParser,
+  DiagramRenderer,
+  DiagramTheme,
+  DiagramThemeName,
+  EdgeArrow,
+  EdgeSide,
+  EdgeTheme,
+  EdgeType,
+  FallbackRenderer,
+  GroupTheme,
+  IconDefinition,
+  IconPlateTheme,
+  IconRegistry,
+  LayoutEdge,
+  LayoutEdgeLabel,
+  LayoutGroup,
+  LayoutNode,
+  LayoutOptions,
+  LayoutResult,
+  MeasuredLabel,
+  MeasureText,
+  MermaidDiagram,
+  MermaidDiagramType,
+  MermaidEdge,
+  MermaidErrorDetails,
+  MermaidGroup,
+  MermaidNode,
+  NodeShape,
+  NodeTheme,
+  ParseOptions,
+  Point,
+  RenderOptions,
+  RenderResult,
+  SemanticDiagram,
+  SemanticEdge,
+  SemanticGroup,
+  SemanticNode,
+  SemanticNodeTheme,
+  SemanticNodeType,
+  SemanticOptions,
+  SemanticRule,
+  ShadowTheme,
+  SpacingTheme,
+  TextTheme,
+  ThemeColors
+} from "../src/index.js";
+
+export {
+  assertSafeIcon,
+  cacheKey,
+  createIconRegistry,
+  defaultIconRegistry,
+  defaultIcons,
+  defaultRules,
+  describeDiagram,
+  detectDiagramType,
+  enrichMermaid,
+  escapeSvgText,
+  estimateTextWidth,
+  extendIconRegistry,
+  illustratedTheme,
+  isMermaidError,
+  layoutDiagram,
+  measureLabel,
+  MermaidError,
+  parseMermaid,
+  parserFor,
+  renderMermaid,
+  RENDERER_VERSION,
+  renderSvg,
+  resolveTheme,
+  significantLine,
+  technicalTheme,
+  wrapText,
+  CSS_VARIABLES
+} from "../src/index.js";

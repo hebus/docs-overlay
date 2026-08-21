@@ -106,4 +106,16 @@ export type { SemanticDiagram, SemanticEdge, SemanticGroup, SemanticNode, Semant
 export type { DiagramParser, ParseOptions } from "./parser/registry.js";
 export type { DiagramCache, DiagramRenderer, FallbackRenderer, RenderOptions, RenderResult } from "./render/renderer.js";
 export type { DiagramThemeName } from "./themes/registry.js";
-export type { ColorToken, DiagramTheme, EdgeTheme, GroupTheme, NodeTheme, SemanticNodeTheme, SpacingTheme, TextTheme, ThemeColors } from "./themes/theme.js";
+export type {
+  ColorToken,
+  DiagramTheme,
+  EdgeTheme,
+  GroupTheme,
+  IconPlateTheme,
+  NodeTheme,
+  SemanticNodeTheme,
+  ShadowTheme,
+  SpacingTheme,
+  TextTheme,
+  ThemeColors
+} from "./themes/theme.js";
