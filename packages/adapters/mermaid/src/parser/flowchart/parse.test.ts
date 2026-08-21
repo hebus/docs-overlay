@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { MermaidError } from "../../errors.js";
-import { flowcharts } from "../../testing/fixtures.js";
+import { flowcharts, regressions } from "../../testing/fixtures.js";
 import { parseFlowchart } from "./parse.js";
 
 const ids = (source: string): readonly string[] => parseFlowchart(source).nodes.map(node => node.id);
@@ -130,6 +130,36 @@ describe("parseFlowchart", () => {
     const diagram = parseFlowchart(flowcharts.chainVersusLabel);
     expect(diagram.nodes.map(node => node.id)).toEqual(["A", "B", "C", "X", "Y"]);
     expect(diagram.edges.find(edge => edge.source === "X")?.label).toBe("carries");
+  });
+
+  /*
+   * Hyphenated ids are the most common thing a real diagram would have hit, and they used to raise. The
+   * rule is narrow on purpose: a hyphen continues an id only when a word character follows it, so a link
+   * written without spaces is still a link.
+   */
+  it("reads a hyphen inside a node id", () => {
+    const diagram = parseFlowchart(regressions.hyphenatedIds);
+    expect(diagram.nodes.map(node => node.id)).toEqual(["user-service", "api-gateway", "user-db"]);
+    expect(links(regressions.hyphenatedIds)).toEqual(["user-service->api-gateway", "api-gateway->user-db"]);
+  });
+
+  it("still reads a link that has no spaces around it", () => {
+    const diagram = parseFlowchart(regressions.hyphenAgainstLinks);
+    expect(diagram.nodes.map(node => node.id)).toEqual(["a-b", "c-d", "x", "y", "p", "q"]);
+    // The dotted one is the trap: `.` is an id character, so `x-.->y` would become an id `x-.`
+    // if the lookahead after a hyphen were the id set rather than just word characters.
+    expect(diagram.edges.map(edge => edge.type)).toEqual(["solid", "dotted", "thick"]);
+  });
+
+  /*
+   * This used to produce three nodes — `A`, a phantom `b`, and `B` — which is the failure this package
+   * says it will not commit: a drawing that lies rather than an error. Quoting now works, which is
+   * Mermaid's own convention for a label with special characters in it.
+   */
+  it("keeps a quoted inline label whole when it contains a link", () => {
+    const diagram = parseFlowchart(regressions.dashesInQuotedLabel);
+    expect(diagram.nodes.map(node => node.id)).toEqual(["A", "B"]);
+    expect(diagram.edges.at(0)?.label).toBe("a--b");
   });
 
   it("reports architecture-specific fields as absent rather than guessing them", () => {
