@@ -3,7 +3,7 @@ import { MermaidError } from "../errors.js";
 import type { LayoutNode, LayoutResult } from "../model/layout.js";
 import { parseMermaid } from "../parser/registry.js";
 import { enrichMermaid } from "../semantic/enrich.js";
-import { architectures, flowcharts } from "../testing/fixtures.js";
+import { architectures, flowcharts, regressions } from "../testing/fixtures.js";
 import { layoutDiagram } from "./layout.js";
 
 const lay = async (source: string): Promise<LayoutResult> => layoutDiagram(enrichMermaid(await parseMermaid(source)));
@@ -149,6 +149,51 @@ describe("layoutDiagram", () => {
     const layout = await lay("architecture-beta\n service a(server)[A]\n service lonely(server)[Lonely]");
     expect(layout.nodes.map(node => node.node.id).sort()).toEqual(["a", "lonely"]);
     expect(overlaps(boxOf(layout, "a"), boxOf(layout, "lonely"))).toBe(false);
+  });
+
+  /*
+   * A group box that spans a service it does not contain claims something false about the diagram, and
+   * a reader believes the box before they re-read the labels.
+   */
+  it("keeps a group box off a service that is not in it", async () => {
+    const layout = await lay(regressions.groupWithUnconnectedMember);
+    const box = layout.groups.find(group => group.group.id === "g");
+    const outsider = boxOf(layout, "out");
+    expect(box).toBeDefined();
+    expect(box === undefined ? false : overlaps({ ...box, node: outsider.node, label: outsider.label }, outsider)).toBe(false);
+  });
+
+  it("stacks an unconnected group member beside its sibling instead of starting a new component", async () => {
+    const layout = await lay(regressions.groupWithUnconnectedMember);
+    // `b` has no edge, so nothing but its group tells the layout where it belongs: under `a`, across
+    // the flow, rather than off to the right past everything else.
+    expect(centreX(boxOf(layout, "b"))).toBe(centreX(boxOf(layout, "a")));
+    expect(centreY(boxOf(layout, "b"))).toBeGreaterThan(centreY(boxOf(layout, "a")));
+  });
+
+  it("stacks several isolated siblings rather than piling them on one cell", async () => {
+    const layout = await lay(`architecture-beta
+      group g(cloud)[Group]
+      service a(server)[A] in g
+      service b(server)[B] in g
+      service c(server)[C] in g
+      service out(server)[Out]
+      a:R --> L:out`);
+    const column = ["a", "b", "c"].map(id => boxOf(layout, id));
+    expect(new Set(column.map(centreX)).size).toBe(1);
+    expect(new Set(column.map(centreY)).size).toBe(3);
+  });
+
+  /*
+   * The same symptom, deliberately left alone. The hints order `mid` between two members of `g`, so no
+   * layout can both honour them and keep the box tight. The box wins because the alternative is an
+   * arrow pointing the wrong way, and a reversed arrow misleads more than a wide box. This test exists
+   * so the choice is visible rather than rediscovered as a bug.
+   */
+  it("still spans a non-member when the hints leave no correct answer", async () => {
+    const layout = await lay(regressions.groupSplitByHints);
+    expect(centreX(boxOf(layout, "mid"))).toBeGreaterThan(centreX(boxOf(layout, "a")));
+    expect(centreX(boxOf(layout, "far"))).toBeGreaterThan(centreX(boxOf(layout, "mid")));
   });
 
   it("sizes a node to fit its label", async () => {

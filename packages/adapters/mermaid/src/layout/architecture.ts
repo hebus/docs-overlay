@@ -115,6 +115,30 @@ function solveGrid(nodes: readonly SemanticNode[], edges: readonly MermaidEdge[]
     neighbours.get(edge.target)?.push({ id: edge.source, push: OPPOSITE[push] });
   }
 
+  /*
+   * Members of one group with no edge between them would each start their own connected component and
+   * get packed far apart, leaving the group's box spanning whatever ended up between them — a box that
+   * claims a service it does not contain.
+   *
+   * So a node the edge graph never mentions is placed next to a group sibling instead of at the next
+   * free component slot, and across the flow rather than along it, so siblings stack instead of
+   * lengthening the group and re-creating the problem one column further out.
+   *
+   * Restricted to nodes of degree zero on purpose. An earlier version chained every member, and it
+   * preempted a stated hint: `far` was reached from its sibling before the edge that placed it, and the
+   * arrow came out pointing backwards. A node with no edge has no hint to contradict, which is what
+   * makes this safe.
+   *
+   * It therefore cannot repair a source that contradicts itself — hints ordering a non-member between
+   * two members leave no correct answer, and the box stays wide. See `regressions.groupSplitByHints`.
+   */
+  const sideways: EdgeSide = fallback === "R" || fallback === "L" ? "B" : "R";
+  const isolated = (id: string): boolean => (neighbours.get(id) ?? []).length === 0;
+  const siblingsOf = (id: string): readonly string[] => {
+    const group = nodes.find(node => node.id === id)?.group;
+    return group === undefined ? [] : nodes.filter(node => node.group === group && node.id !== id).map(node => node.id);
+  };
+
   const cells = new Map<string, Cell>();
   const taken = new Set<string>();
   const key = (cell: Cell): string => `${cell.col}:${cell.row}`;
@@ -123,8 +147,17 @@ function solveGrid(nodes: readonly SemanticNode[], edges: readonly MermaidEdge[]
   for (const seed of nodes) {
     if (cells.has(seed.id)) continue;
 
-    const start: Cell = { col: componentOffset, row: 0 };
-    while (taken.has(key(start))) start.col += 1;
+    const anchor = isolated(seed.id)
+      ? siblingsOf(seed.id)
+          .map(id => cells.get(id))
+          .find(cell => cell !== undefined)
+      : undefined;
+    const [scol, srow] = STEP[sideways];
+    const start: Cell = anchor === undefined ? { col: componentOffset, row: 0 } : { col: anchor.col + scol, row: anchor.row + srow };
+    while (taken.has(key(start))) {
+      start.col += scol === 0 ? 0 : scol;
+      start.row += srow === 0 ? 1 : srow;
+    }
     cells.set(seed.id, { ...start });
     taken.add(key(start));
 

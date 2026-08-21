@@ -153,4 +153,30 @@ Some prose.`
 } as const;
 
 /** Every bug becomes a named source here before it becomes a fix. */
-export const regressions: Readonly<Record<string, string>> = {};
+export const regressions = {
+  /**
+   * `b` has no edge at all, so it used to become its own connected component and get packed to the
+   * right of `out` — leaving group `g`'s box spanning a service that is not in it. Nothing in the
+   * source asks for that: `b` can sit under `a`.
+   */
+  groupWithUnconnectedMember: `architecture-beta
+    group g(cloud)[Group]
+    service a(server)[A] in g
+    service b(server)[B] in g
+    service out(server)[Out]
+    a:R --> L:out`,
+
+  /**
+   * The same symptom with a different cause, and this one is *not* a bug. The hints say "a, then mid,
+   * then far, left to right" while `a` and `far` are grouped and `mid` is not: no layout can honour
+   * both. The box spans `mid` because the alternative is an arrow pointing the wrong way, and a
+   * reversed arrow is the worse lie.
+   */
+  groupSplitByHints: `architecture-beta
+    group g(cloud)[Group]
+    service a(server)[A] in g
+    service far(server)[Far] in g
+    service mid(server)[Mid]
+    a:R --> L:mid
+    mid:R --> L:far`
+} as const;
