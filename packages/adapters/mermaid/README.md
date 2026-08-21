@@ -48,14 +48,19 @@ it.
 
 ## What it renders
 
-| Diagram                                                        | Support                                     |
-| -------------------------------------------------------------- | ------------------------------------------- |
-| `flowchart` / `graph`                                          | a documented subset, below                  |
-| `architecture-beta`                                            | full, through Mermaid's own Langium grammar |
-| `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram` | not yet — see [Fallback](#fallback)         |
+| Diagram                                                        | Support                               |
+| -------------------------------------------------------------- | ------------------------------------- |
+| `flowchart` / `graph`                                          | a documented subset, below            |
+| `architecture-beta`                                            | through Mermaid's own Langium grammar |
+| `sequenceDiagram`, `classDiagram`, `stateDiagram`, `erDiagram` | not yet — see [Fallback](#fallback)   |
 
 Anything else raises a `MermaidError` whose `code` says which of the two cases it is: a diagram type
 that is recognised but unsupported, or text that is not a diagram at all.
+
+One gap in `architecture-beta` is not this package's doing: **edge labels**. The AST that
+`@mermaid-js/parser` publishes carries a title on an edge, and the grammar it ships has no token for one,
+so there is no syntax to write — every candidate is a parse error. Mermaid has added it upstream since,
+so it will start working on a parser bump rather than on a change here.
 
 ### The flowchart subset
 
@@ -114,6 +119,12 @@ const { svg } = await renderMermaid(source, { stylesheet: "external" });
 
 `"inline"` stays the default, because an SVG opened on its own has nowhere else to carry its styles.
 `scopeOf(theme)` names the class every rule is scoped to, if you need to target it.
+
+One caveat on a React Server Components build, Next.js in particular: the framework emits every element
+twice, once as HTML and once in the RSC payload, so the copy you saved is still counted once in each. The
+saving is real and it is about half what the byte arithmetic suggests. Measured on the page documenting
+this — four diagrams, 227.9 kB down to 202.1 kB, where removing four inlined copies outright would have
+been nearer 52 kB.
 
 Every colour is read through a CSS custom property with the theme value as its fallback, so a site
 restyles a diagram it did not generate:
@@ -254,9 +265,12 @@ release and the test suite.
 
 ## Roadmap
 
-- **0.3** — a richer icon set, and per-diagram theme overrides
-- **0.3** — `sequenceDiagram`, `classDiagram`, `stateDiagram`
-- **0.4** — an Excalidraw renderer, through the same `DiagramRenderer` seam
+Unnumbered on purpose: the last set of numbers went stale the moment `0.3` shipped.
+
+- a richer icon set, and per-diagram theme overrides
+- `sequenceDiagram`, `classDiagram`, `stateDiagram` — a hand-written parser each, since Mermaid ships
+  none of them standalone
+- an Excalidraw renderer, through the same `DiagramRenderer` seam
 
 ## License
 

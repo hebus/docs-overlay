@@ -330,7 +330,19 @@ function route(
   return { edge, points, label: edgeLabel(edge.label, points, theme, measure) };
 }
 
-/** Sat on the middle vertex of the route, which for an L-shape is the corner — where a reader looks. */
+/**
+ * Sat on the middle vertex of the route, which for an L-shape is the corner — where a reader looks.
+ *
+ * Unreachable with the pinned parser, and kept anyway. `Edge` carries a `title` in the AST that
+ * `@mermaid-js/parser@1.2.1` publishes, but the grammar it ships has no `ARCH_TITLE` token, so no
+ * architecture source can set one — every candidate syntax is a parse error. Mermaid's `develop` branch
+ * has since added `'-' title '-'` to the arrow rule, so this starts working on a parser bump rather than
+ * on a change here.
+ *
+ * One thing to look at when it does: the label lands on the corner, so on a tight layout it can fall on
+ * a node. There is deliberately no fixture for that yet — a regression test whose source cannot parse is
+ * a test that proves nothing.
+ */
 function edgeLabel(text: string | undefined, points: readonly Point[], theme: DiagramTheme, measure: MeasureText | undefined): LayoutEdge["label"] {
   if (text === undefined || points.length === 0) return undefined;
 
